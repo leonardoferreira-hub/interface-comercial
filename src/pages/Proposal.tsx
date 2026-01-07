@@ -1,0 +1,407 @@
+import { useEffect, useState } from 'react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import { ArrowLeft, FileDown, Send, Printer, FileText } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Header } from '@/components/Header';
+import { NavigationTabs } from '@/components/NavigationTabs';
+import { StatusBadge } from '@/components/StatusBadge';
+import { detalhesEmissao, finalizarProposta } from '@/lib/supabase';
+import { useToast } from '@/hooks/use-toast';
+
+export default function Proposal() {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const id = searchParams.get('id');
+
+  const [emissao, setEmissao] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSending, setIsSending] = useState(false);
+
+  useEffect(() => {
+    if (id) {
+      loadEmissao();
+    } else {
+      setIsLoading(false);
+    }
+  }, [id]);
+
+  const loadEmissao = async () => {
+    try {
+      const result = await detalhesEmissao(id!);
+      if (result.data) {
+        setEmissao(result.data);
+      }
+    } catch (error) {
+      toast({
+        title: 'Erro ao carregar',
+        description: 'Não foi possível carregar a emissão.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSendProposal = async () => {
+    setIsSending(true);
+    try {
+      await finalizarProposta(id!, 'enviada', new Date().toISOString());
+      toast({
+        title: 'Proposta enviada!',
+        description: 'A proposta foi marcada como enviada.',
+      });
+      loadEmissao();
+    } catch (error) {
+      toast({
+        title: 'Erro ao enviar',
+        description: 'Tente novamente.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  const handlePrint = () => {
+    window.print();
+  };
+
+  const handleExportPDF = () => {
+    toast({
+      title: 'Exportando PDF...',
+      description: 'O download será iniciado em breve.',
+    });
+    // TODO: Implement PDF export
+  };
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+    }).format(value);
+  };
+
+  // Group costs by type
+  const groupCostsByType = (custos: any[]) => {
+    const groups: Record<string, any[]> = {
+      upfront: [],
+      anual: [],
+      mensal: [],
+      outros: [],
+    };
+
+    custos.forEach((custo) => {
+      const tipo = custo.tipo.toLowerCase();
+      if (tipo.includes('upfront')) {
+        groups.upfront.push(custo);
+      } else if (tipo.includes('anual')) {
+        groups.anual.push(custo);
+      } else if (tipo.includes('mensal')) {
+        groups.mensal.push(custo);
+      } else {
+        groups.outros.push(custo);
+      }
+    });
+
+    return groups;
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <NavigationTabs />
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-pulse text-muted-foreground">Carregando...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!id) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <NavigationTabs />
+        <div className="max-w-4xl mx-auto px-4 py-8">
+          <Card className="border-0 card-shadow">
+            <CardContent className="py-16 text-center">
+              <FileText className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
+              <h3 className="text-xl font-semibold mb-2">Nenhuma proposta selecionada</h3>
+              <p className="text-muted-foreground mb-6">
+                Selecione uma emissão no Dashboard para visualizar a proposta.
+              </p>
+              <Button onClick={() => navigate('/')}>
+                Ir para Dashboard
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  if (!emissao) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <NavigationTabs />
+        <div className="max-w-4xl mx-auto px-4 py-8">
+          <p className="text-center text-muted-foreground">Emissão não encontrada.</p>
+          <Button onClick={() => navigate('/')} className="mx-auto mt-4 block">
+            Voltar ao Dashboard
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  const costGroups = emissao.custos ? groupCostsByType(emissao.custos) : { upfront: [], anual: [], mensal: [], outros: [] };
+  const totalCosts = emissao.custos?.reduce((sum: number, c: any) => sum + c.valor, 0) || 0;
+  const percentualVolume = emissao.volume > 0 ? ((totalCosts / emissao.volume) * 100).toFixed(2) : '0.00';
+
+  return (
+    <div className="min-h-screen bg-background">
+      <Header />
+      <NavigationTabs />
+
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <Button variant="ghost" onClick={() => navigate('/')} className="mb-2 -ml-2">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Voltar
+            </Button>
+            <h2 className="text-2xl font-bold">Proposta - {emissao.numero_emissao}</h2>
+            <div className="flex items-center gap-2 mt-1">
+              <StatusBadge status={emissao.status_proposta} />
+              <span className="text-sm text-muted-foreground">
+                Criada em {new Date(emissao.data_criacao).toLocaleDateString('pt-BR')}
+              </span>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={handlePrint}>
+              <Printer className="h-4 w-4 mr-2" />
+              Imprimir
+            </Button>
+            <Button variant="outline" onClick={handleExportPDF}>
+              <FileDown className="h-4 w-4 mr-2" />
+              Exportar PDF
+            </Button>
+            <Button onClick={handleSendProposal} disabled={isSending || emissao.status_proposta === 'enviada'}>
+              <Send className="h-4 w-4 mr-2" />
+              {isSending ? 'Enviando...' : 'Enviar Proposta'}
+            </Button>
+          </div>
+        </div>
+
+        <div className="space-y-6">
+          {/* Emission Data */}
+          <Card className="border-0 card-shadow">
+            <CardHeader>
+              <CardTitle>Dados da Emissão</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                <div>
+                  <p className="text-sm text-muted-foreground">Demandante</p>
+                  <p className="font-semibold">{emissao.demandante_proposta}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Categoria</p>
+                  <p className="font-semibold">{emissao.categoria}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Volume</p>
+                  <p className="font-semibold">{formatCurrency(emissao.volume)}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Séries</p>
+                  <p className="font-semibold">{emissao.quantidade_series || 1}</p>
+                </div>
+              </div>
+              {emissao.empresa_destinataria && (
+                <div className="mt-4">
+                  <p className="text-sm text-muted-foreground">Empresa Destinatária</p>
+                  <p className="font-semibold">{emissao.empresa_destinataria}</p>
+                </div>
+              )}
+              {emissao.observacao && (
+                <div className="mt-4">
+                  <p className="text-sm text-muted-foreground">Observações</p>
+                  <p className="text-sm">{emissao.observacao}</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Costs by Category */}
+          {emissao.custos && emissao.custos.length > 0 && (
+            <>
+              {/* Upfront Costs */}
+              {costGroups.upfront.length > 0 && (
+                <Card className="border-0 card-shadow">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg">Despesas Up Front (Flat)</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="rounded-lg border border-border overflow-hidden">
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="bg-muted/50">
+                            <TableHead>Prestador</TableHead>
+                            <TableHead className="text-right">Valor</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {costGroups.upfront.map((custo: any, index: number) => (
+                            <TableRow key={index}>
+                              <TableCell>{custo.tipo.replace('Upfront - ', '')}</TableCell>
+                              <TableCell className="text-right">{formatCurrency(custo.valor)}</TableCell>
+                            </TableRow>
+                          ))}
+                          <TableRow className="bg-muted/30 font-semibold">
+                            <TableCell>TOTAL</TableCell>
+                            <TableCell className="text-right text-primary">
+                              {formatCurrency(costGroups.upfront.reduce((sum: number, c: any) => sum + c.valor, 0))}
+                            </TableCell>
+                          </TableRow>
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Annual Costs */}
+              {costGroups.anual.length > 0 && (
+                <Card className="border-0 card-shadow">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg">Despesas Anuais</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="rounded-lg border border-border overflow-hidden">
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="bg-muted/50">
+                            <TableHead>Prestador</TableHead>
+                            <TableHead className="text-right">Valor</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {costGroups.anual.map((custo: any, index: number) => (
+                            <TableRow key={index}>
+                              <TableCell>{custo.tipo.replace('Anual - ', '')}</TableCell>
+                              <TableCell className="text-right">{formatCurrency(custo.valor)}</TableCell>
+                            </TableRow>
+                          ))}
+                          <TableRow className="bg-muted/30 font-semibold">
+                            <TableCell>TOTAL</TableCell>
+                            <TableCell className="text-right text-primary">
+                              {formatCurrency(costGroups.anual.reduce((sum: number, c: any) => sum + c.valor, 0))}
+                            </TableCell>
+                          </TableRow>
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Monthly Costs */}
+              {costGroups.mensal.length > 0 && (
+                <Card className="border-0 card-shadow">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg">Despesas Mensais</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="rounded-lg border border-border overflow-hidden">
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="bg-muted/50">
+                            <TableHead>Prestador</TableHead>
+                            <TableHead className="text-right">Valor</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {costGroups.mensal.map((custo: any, index: number) => (
+                            <TableRow key={index}>
+                              <TableCell>{custo.tipo.replace('Mensal - ', '')}</TableCell>
+                              <TableCell className="text-right">{formatCurrency(custo.valor)}</TableCell>
+                            </TableRow>
+                          ))}
+                          <TableRow className="bg-muted/30 font-semibold">
+                            <TableCell>TOTAL</TableCell>
+                            <TableCell className="text-right text-primary">
+                              {formatCurrency(costGroups.mensal.reduce((sum: number, c: any) => sum + c.valor, 0))}
+                            </TableCell>
+                          </TableRow>
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Other Costs */}
+              {costGroups.outros.length > 0 && (
+                <Card className="border-0 card-shadow">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg">Outros Custos</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="rounded-lg border border-border overflow-hidden">
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="bg-muted/50">
+                            <TableHead>Tipo</TableHead>
+                            <TableHead className="text-right">Valor</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {costGroups.outros.map((custo: any, index: number) => (
+                            <TableRow key={index}>
+                              <TableCell>{custo.tipo}</TableCell>
+                              <TableCell className="text-right">{formatCurrency(custo.valor)}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </>
+          )}
+
+          {/* Summary */}
+          <Card className="border-0 card-shadow bg-gradient-to-r from-primary/5 to-primary/10">
+            <CardHeader className="pb-3">
+              <CardTitle>Resumo de Custos</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="bg-card rounded-lg p-4 card-shadow">
+                  <p className="text-sm text-muted-foreground mb-1">Total de Custos</p>
+                  <p className="text-2xl font-bold text-primary">{formatCurrency(totalCosts)}</p>
+                </div>
+                <div className="bg-card rounded-lg p-4 card-shadow">
+                  <p className="text-sm text-muted-foreground mb-1">Volume da Emissão</p>
+                  <p className="text-2xl font-bold">{formatCurrency(emissao.volume)}</p>
+                </div>
+                <div className="bg-card rounded-lg p-4 card-shadow">
+                  <p className="text-sm text-muted-foreground mb-1">% de Custos</p>
+                  <p className="text-2xl font-bold text-warning">{percentualVolume}%</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </main>
+    </div>
+  );
+}
