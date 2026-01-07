@@ -19,11 +19,14 @@ function transformCustosToStep2Format(apiResponse: any): CostsData {
   const mensal: CostItem[] = [];
 
   custos.forEach((custo: any, index: number) => {
+    // gross_up vem como decimal do Supabase (ex: 0.1215), converter para percentual (12.15)
+    const grossUpPercent = (custo.gross_up || 0) * 100;
+    
     const item: CostItem = {
       id: custo.id || `custo-${index}`,
       prestador: custo.prestador_nome || custo.papel || 'Não especificado',
       valor: custo.valor_upfront_calculado || custo.preco_upfront || 0,
-      grossUp: custo.gross_up || 0,
+      grossUp: grossUpPercent,
       valorBruto: custo.valor_upfront_calculado || custo.preco_upfront || 0,
       tipo: custo.tipo_preco === 'percentual' ? 'calculado' : 'auto',
       id_prestador: custo.id_prestador || null,
