@@ -1,14 +1,77 @@
 import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, Save } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Save, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Header } from '@/components/Header';
 import { NavigationTabs } from '@/components/NavigationTabs';
 import { StepIndicator } from '@/components/calculator/StepIndicator';
 import { Step1BasicData, type EmissaoData } from '@/components/calculator/Step1BasicData';
-import { Step2CostsProviders, defaultCostsData, type CostsData } from '@/components/calculator/Step2CostsProviders';
-import { criarEmissao, salvarCustos } from '@/lib/supabase';
+import { Step2CostsProviders, type CostsData, type CostItem } from '@/components/calculator/Step2CostsProviders';
+import { criarEmissao, salvarCustos, fetchCustosPorCombinacao } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
+
+// Função para transformar custos da API para o formato do Step2
+function transformCustosToStep2Format(apiResponse: any): CostsData {
+  const custos = apiResponse?.data?.custos || [];
+  
+  const upfront: CostItem[] = [];
+  const anual: CostItem[] = [];
+  const mensal: CostItem[] = [];
+
+  custos.forEach((custo: any, index: number) => {
+    const item: CostItem = {
+      id: custo.id || `custo-${index}`,
+      prestador: custo.prestador_nome || custo.papel || 'Não especificado',
+      valor: custo.valor_upfront_calculado || custo.preco_upfront || 0,
+      grossUp: custo.gross_up || 0,
+      valorBruto: custo.valor_upfront_calculado || custo.preco_upfront || 0,
+      tipo: custo.tipo_preco === 'percentual' ? 'calculado' : 'auto',
+      id_prestador: custo.id_prestador || null,
+      papel: custo.papel,
+    };
+
+    const periodicidade = custo.periodicidade?.toLowerCase() || '';
+    const temUpfront = (custo.preco_upfront || 0) > 0 || (custo.valor_upfront_calculado || 0) > 0;
+    const temRecorrente = (custo.preco_recorrente || 0) > 0 || (custo.valor_recorrente_calculado || 0) > 0;
+
+    // Adicionar item upfront se tiver valor
+    if (temUpfront) {
+      upfront.push({
+        ...item,
+        valor: custo.valor_upfront_calculado || custo.preco_upfront || 0,
+        valorBruto: custo.valor_upfront_calculado || custo.preco_upfront || 0,
+      });
+    }
+
+    // Adicionar item recorrente baseado na periodicidade
+    if (temRecorrente) {
+      const itemRecorrente: CostItem = {
+        ...item,
+        id: `${item.id}-rec`,
+        valor: custo.valor_recorrente_calculado || custo.preco_recorrente || 0,
+        valorBruto: custo.valor_recorrente_calculado || custo.preco_recorrente || 0,
+      };
+
+      if (periodicidade === 'mensal') {
+        mensal.push(itemRecorrente);
+      } else if (periodicidade === 'anual') {
+        anual.push(itemRecorrente);
+      } else {
+        // Default para anual se não especificado
+        anual.push(itemRecorrente);
+      }
+    }
+  });
+
+  return { upfront, anual, mensal };
+}
+
+// Custos default vazios
+const emptyCostsData: CostsData = {
+  upfront: [],
+  anual: [],
+  mensal: [],
+};
 
 export default function Calculator() {
   const navigate = useNavigate();
@@ -18,6 +81,7 @@ export default function Calculator() {
 
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
+  const [isFetchingCosts, setIsFetchingCosts] = useState(false);
 
   const [basicData, setBasicData] = useState<EmissaoData>({
     demandante_proposta: '',
@@ -25,19 +89,27 @@ export default function Calculator() {
     categoria: '',
     oferta: '',
     veiculo: '',
+    lastro: '',
     quantidade_series: '1',
     series: [{ numero: 1, valor_emissao: 0 }],
   });
 
-  const [costsData, setCostsData] = useState<CostsData>(defaultCostsData);
+  const [costsData, setCostsData] = useState<CostsData>(emptyCostsData);
 
   const validateStep1 = (): string[] => {
     const errors: string[] = [];
     if (!basicData.demandante_proposta.trim()) errors.push('Demandante da Proposta');
     if (!basicData.empresa_destinataria.trim()) errors.push('Empresa Destinatária');
     if (!basicData.categoria) errors.push('Categoria');
-    if (!basicData.oferta) errors.push('Tipo de Oferta');
-    if (!basicData.veiculo) errors.push('Veículo');
+
+    const showLastro = ['CRI', 'CRA'].includes(basicData.categoria);
+    const showOfertaVeiculo = ['DEB', 'CR', 'NC'].includes(basicData.categoria);
+
+    if (showLastro && !basicData.lastro) errors.push('Lastro');
+    if (showOfertaVeiculo) {
+      if (!basicData.oferta) errors.push('Tipo de Oferta');
+      if (!basicData.veiculo) errors.push('Veículo');
+    }
 
     const volumeTotal = basicData.series.reduce((sum, s) => sum + (s.valor_emissao || 0), 0);
     if (volumeTotal <= 0) errors.push('Valor das Séries (deve ser maior que zero)');
@@ -45,7 +117,9 @@ export default function Calculator() {
     return errors;
   };
 
-  const handleNext = () => {
+  const volumeTotal = basicData.series.reduce((sum, s) => sum + (s.valor_emissao || 0), 0);
+
+  const handleNext = async () => {
     if (currentStep === 1) {
       const errors = validateStep1();
       if (errors.length > 0) {
@@ -56,7 +130,44 @@ export default function Calculator() {
         });
         return;
       }
+
+      // Buscar custos automaticamente ao avançar para Step 2
+      setIsFetchingCosts(true);
+      try {
+        console.log('🔄 [Calculator] Buscando custos para combinação...');
+        
+        const custosResponse = await fetchCustosPorCombinacao({
+          categoria: basicData.categoria,
+          tipo_oferta: basicData.oferta,
+          veiculo: basicData.veiculo,
+          lastro: basicData.lastro,
+          volume: volumeTotal,
+          series: basicData.series,
+        });
+
+        console.log('📊 [Calculator] Custos recebidos:', custosResponse);
+
+        if (custosResponse?.success && custosResponse?.data?.custos) {
+          const transformedCosts = transformCustosToStep2Format(custosResponse);
+          console.log('✅ [Calculator] Custos transformados:', transformedCosts);
+          setCostsData(transformedCosts);
+        } else {
+          console.log('⚠️ [Calculator] Nenhum custo encontrado, usando defaults');
+          setCostsData(emptyCostsData);
+        }
+      } catch (error) {
+        console.error('💥 [Calculator] Erro ao buscar custos:', error);
+        toast({
+          title: 'Aviso',
+          description: 'Não foi possível buscar os custos. Você pode preencher manualmente.',
+          variant: 'default',
+        });
+        setCostsData(emptyCostsData);
+      } finally {
+        setIsFetchingCosts(false);
+      }
     }
+
     if (currentStep < 2) {
       setCurrentStep(currentStep + 1);
     }
@@ -69,8 +180,6 @@ export default function Calculator() {
       navigate('/');
     }
   };
-
-  const volumeTotal = basicData.series.reduce((sum, s) => sum + (s.valor_emissao || 0), 0);
 
   const handleSave = async () => {
     setIsLoading(true);
@@ -85,8 +194,9 @@ export default function Calculator() {
         demandante_proposta: basicData.demandante_proposta,
         empresa_destinataria: basicData.empresa_destinataria,
         categoria,
-        oferta: basicData.oferta,
-        veiculo: basicData.veiculo,
+        oferta: basicData.oferta || null,
+        veiculo: basicData.veiculo || null,
+        lastro: basicData.lastro || null,
         quantidade_series: basicData.series.length,
         series: basicData.series.map(s => ({
           numero: s.numero,
@@ -103,12 +213,42 @@ export default function Calculator() {
         throw new Error(result.error);
       }
 
-      // Save costs from all sections
+      // Save costs from all sections with correct mapping
       const allCosts = [
-        ...costsData.upfront.map((c) => ({ tipo: `Upfront - ${c.prestador}`, valor: c.valorBruto, descricao: `Gross Up: ${c.grossUp}%` })),
-        ...costsData.anual.map((c) => ({ tipo: `Anual - ${c.prestador}`, valor: c.valorBruto, descricao: `Gross Up: ${c.grossUp}%` })),
-        ...costsData.mensal.map((c) => ({ tipo: `Mensal - ${c.prestador}`, valor: c.valorBruto, descricao: `Gross Up: ${c.grossUp}%` })),
-      ].filter((c) => c.valor > 0);
+        ...costsData.upfront.map((c) => ({
+          papel: c.papel || c.prestador,
+          id_prestador: c.id_prestador || null,
+          tipo_preco: c.tipo === 'calculado' ? 'percentual' : 'fixo',
+          preco_upfront: c.valorBruto,
+          preco_recorrente: 0,
+          periodicidade: null,
+          gross_up: c.grossUp || 0,
+          valor_upfront_bruto: c.valorBruto,
+          valor_recorrente_bruto: 0,
+        })),
+        ...costsData.anual.map((c) => ({
+          papel: c.papel || c.prestador,
+          id_prestador: c.id_prestador || null,
+          tipo_preco: c.tipo === 'calculado' ? 'percentual' : 'fixo',
+          preco_upfront: 0,
+          preco_recorrente: c.valorBruto,
+          periodicidade: 'anual',
+          gross_up: c.grossUp || 0,
+          valor_upfront_bruto: 0,
+          valor_recorrente_bruto: c.valorBruto,
+        })),
+        ...costsData.mensal.map((c) => ({
+          papel: c.papel || c.prestador,
+          id_prestador: c.id_prestador || null,
+          tipo_preco: c.tipo === 'calculado' ? 'percentual' : 'fixo',
+          preco_upfront: 0,
+          preco_recorrente: c.valorBruto,
+          periodicidade: 'mensal',
+          gross_up: c.grossUp || 0,
+          valor_upfront_bruto: 0,
+          valor_recorrente_bruto: c.valorBruto,
+        })),
+      ].filter((c) => c.preco_upfront > 0 || c.preco_recorrente > 0);
 
       console.log('🧾 [Calculator] custos para salvar:', { count: allCosts.length, allCosts });
 
@@ -169,7 +309,7 @@ export default function Calculator() {
         </div>
 
         <div className="flex items-center justify-between mt-8">
-          <Button variant="outline" onClick={handleBack}>
+          <Button variant="outline" onClick={handleBack} disabled={isFetchingCosts || isLoading}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             {currentStep === 1 ? 'Cancelar' : 'Voltar'}
           </Button>
@@ -182,9 +322,18 @@ export default function Calculator() {
               </Button>
             )}
             {currentStep < 2 && (
-              <Button onClick={handleNext}>
-                Próximo
-                <ArrowRight className="h-4 w-4 ml-2" />
+              <Button onClick={handleNext} disabled={isFetchingCosts}>
+                {isFetchingCosts ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Buscando custos...
+                  </>
+                ) : (
+                  <>
+                    Próximo
+                    <ArrowRight className="h-4 w-4 ml-2" />
+                  </>
+                )}
               </Button>
             )}
           </div>
