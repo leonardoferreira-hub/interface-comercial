@@ -160,11 +160,8 @@ serve(async (req) => {
         valorRecorrente = (custo.preco_recorrente || 0) * volume / 100;
       }
 
-      // Aplicar gross-up se existir
-      if (custo.gross_up && custo.gross_up > 0) {
-        valorUpfront = valorUpfront * (1 + custo.gross_up / 100);
-        valorRecorrente = valorRecorrente * (1 + custo.gross_up / 100);
-      }
+      // NÃO aplicar gross-up aqui - o frontend calcula o valor bruto
+      // O backend retorna apenas o valor líquido e o gross_up para cálculo no front
 
       totalUpfront += valorUpfront;
       totalRecorrente += valorRecorrente;
