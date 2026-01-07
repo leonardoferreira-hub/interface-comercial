@@ -19,40 +19,50 @@ function transformCustosToStep2Format(apiResponse: any): CostsData {
   const mensal: CostItem[] = [];
 
   custos.forEach((custo: any, index: number) => {
-    // gross_up vem como decimal do Supabase (ex: 0.1215), converter para percentual (12.15)
-    const grossUpPercent = (custo.gross_up || 0) * 100;
+    // Normalizar gross_up: se <= 1, é decimal (0.1215), converter para percentual (12.15)
+    // Se > 1, já está em percentual
+    const rawGrossUp = custo.gross_up || 0;
+    const grossUpPercent = rawGrossUp <= 1 ? rawGrossUp * 100 : rawGrossUp;
     
-    const item: CostItem = {
-      id: custo.id || `custo-${index}`,
-      prestador: custo.prestador_nome || custo.papel || 'Não especificado',
-      valor: custo.valor_upfront_calculado || custo.preco_upfront || 0,
-      grossUp: grossUpPercent,
-      valorBruto: custo.valor_upfront_calculado || custo.preco_upfront || 0,
-      tipo: custo.tipo_preco === 'percentual' ? 'calculado' : 'auto',
-      id_prestador: custo.id_prestador || null,
-      papel: custo.papel,
+    // Função para calcular valor bruto a partir do valor líquido
+    const calcularValorBruto = (valorLiquido: number, grossUp: number) => {
+      const grossUpDecimal = grossUp / 100;
+      if (grossUpDecimal >= 1) return valorLiquido;
+      return valorLiquido / (1 - grossUpDecimal);
     };
 
+    const valorUpfront = custo.valor_upfront_calculado || custo.preco_upfront || 0;
+    const valorRecorrente = custo.valor_recorrente_calculado || custo.preco_recorrente || 0;
+
     const periodicidade = custo.periodicidade?.toLowerCase() || '';
-    const temUpfront = (custo.preco_upfront || 0) > 0 || (custo.valor_upfront_calculado || 0) > 0;
-    const temRecorrente = (custo.preco_recorrente || 0) > 0 || (custo.valor_recorrente_calculado || 0) > 0;
+    const temUpfront = valorUpfront > 0;
+    const temRecorrente = valorRecorrente > 0;
 
     // Adicionar item upfront se tiver valor
     if (temUpfront) {
       upfront.push({
-        ...item,
-        valor: custo.valor_upfront_calculado || custo.preco_upfront || 0,
-        valorBruto: custo.valor_upfront_calculado || custo.preco_upfront || 0,
+        id: custo.id || `custo-${index}`,
+        prestador: custo.prestador_nome || custo.papel || 'Não especificado',
+        valor: valorUpfront,
+        grossUp: grossUpPercent,
+        valorBruto: calcularValorBruto(valorUpfront, grossUpPercent),
+        tipo: custo.tipo_preco === 'percentual' ? 'calculado' : 'auto',
+        id_prestador: custo.id_prestador || null,
+        papel: custo.papel,
       });
     }
 
     // Adicionar item recorrente baseado na periodicidade
     if (temRecorrente) {
       const itemRecorrente: CostItem = {
-        ...item,
-        id: `${item.id}-rec`,
-        valor: custo.valor_recorrente_calculado || custo.preco_recorrente || 0,
-        valorBruto: custo.valor_recorrente_calculado || custo.preco_recorrente || 0,
+        id: `${custo.id || `custo-${index}`}-rec`,
+        prestador: custo.prestador_nome || custo.papel || 'Não especificado',
+        valor: valorRecorrente,
+        grossUp: grossUpPercent,
+        valorBruto: calcularValorBruto(valorRecorrente, grossUpPercent),
+        tipo: custo.tipo_preco === 'percentual' ? 'calculado' : 'auto',
+        id_prestador: custo.id_prestador || null,
+        papel: custo.papel,
       };
 
       if (periodicidade === 'mensal') {
@@ -60,7 +70,6 @@ function transformCustosToStep2Format(apiResponse: any): CostsData {
       } else if (periodicidade === 'anual') {
         anual.push(itemRecorrente);
       } else {
-        // Default para anual se não especificado
         anual.push(itemRecorrente);
       }
     }
@@ -217,15 +226,16 @@ export default function Calculator() {
       }
 
       // Save costs from all sections with correct mapping
+      // gross_up salvo como decimal (0.1215), valor líquido em preco_*, bruto em valor_*_bruto
       const allCosts = [
         ...costsData.upfront.map((c) => ({
           papel: c.papel || c.prestador,
           id_prestador: c.id_prestador || null,
           tipo_preco: c.tipo === 'calculado' ? 'percentual' : 'fixo',
-          preco_upfront: c.valorBruto,
+          preco_upfront: c.valor,
           preco_recorrente: 0,
           periodicidade: null,
-          gross_up: c.grossUp || 0,
+          gross_up: (c.grossUp || 0) / 100,
           valor_upfront_bruto: c.valorBruto,
           valor_recorrente_bruto: 0,
         })),
@@ -234,9 +244,9 @@ export default function Calculator() {
           id_prestador: c.id_prestador || null,
           tipo_preco: c.tipo === 'calculado' ? 'percentual' : 'fixo',
           preco_upfront: 0,
-          preco_recorrente: c.valorBruto,
+          preco_recorrente: c.valor,
           periodicidade: 'anual',
-          gross_up: c.grossUp || 0,
+          gross_up: (c.grossUp || 0) / 100,
           valor_upfront_bruto: 0,
           valor_recorrente_bruto: c.valorBruto,
         })),
@@ -245,9 +255,9 @@ export default function Calculator() {
           id_prestador: c.id_prestador || null,
           tipo_preco: c.tipo === 'calculado' ? 'percentual' : 'fixo',
           preco_upfront: 0,
-          preco_recorrente: c.valorBruto,
+          preco_recorrente: c.valor,
           periodicidade: 'mensal',
-          gross_up: c.grossUp || 0,
+          gross_up: (c.grossUp || 0) / 100,
           valor_upfront_bruto: 0,
           valor_recorrente_bruto: c.valorBruto,
         })),

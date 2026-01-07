@@ -152,7 +152,7 @@ export function CostRow({ item, onChange, onRemove }: CostRowProps) {
       <TableCell className="text-muted-foreground">{item.papel || '-'}</TableCell>
       <TableCell className="font-medium">{item.prestador}</TableCell>
       <TableCell>{formatCurrency(item.valor)}</TableCell>
-      <TableCell>{item.grossUp}%</TableCell>
+      <TableCell>{item.grossUp.toFixed(2)}%</TableCell>
       <TableCell className="font-medium">{formatCurrency(item.valorBruto)}</TableCell>
       <TableCell>
         <Badge variant={tipoBadgeVariant[item.tipo]} className="text-xs">
