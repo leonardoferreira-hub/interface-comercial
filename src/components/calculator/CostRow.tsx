@@ -38,7 +38,10 @@ export function CostRow({ item, onChange, onRemove }: CostRowProps) {
   };
 
   const calculateValorBruto = (valor: number, grossUp: number) => {
-    return valor * (1 + grossUp / 100);
+    const grossUpDecimal = grossUp / 100;
+    // Proteção: se grossUp >= 100%, retorna o valor original
+    if (grossUpDecimal >= 1) return valor;
+    return valor / (1 - grossUpDecimal);
   };
 
   const handleSave = () => {
@@ -74,6 +77,14 @@ export function CostRow({ item, onChange, onRemove }: CostRowProps) {
   if (isEditing) {
     return (
       <TableRow>
+        <TableCell>
+          <Input
+            value={editData.papel || ''}
+            onChange={(e) => setEditData({ ...editData, papel: e.target.value })}
+            placeholder="Papel"
+            className="h-8"
+          />
+        </TableCell>
         <TableCell>
           <Input
             value={editData.prestador}
@@ -138,6 +149,7 @@ export function CostRow({ item, onChange, onRemove }: CostRowProps) {
 
   return (
     <TableRow>
+      <TableCell className="text-muted-foreground">{item.papel || '-'}</TableCell>
       <TableCell className="font-medium">{item.prestador}</TableCell>
       <TableCell>{formatCurrency(item.valor)}</TableCell>
       <TableCell>{item.grossUp}%</TableCell>

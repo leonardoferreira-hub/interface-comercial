@@ -91,7 +91,8 @@ export function CostSection({ type, items, onChange }: CostSectionProps) {
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/50">
-                <TableHead className="w-[250px]">Prestador do Serviço</TableHead>
+                <TableHead className="w-[180px]">Papel</TableHead>
+                <TableHead className="w-[200px]">Prestador do Serviço</TableHead>
                 <TableHead className="w-[140px]">Valor (R$)</TableHead>
                 <TableHead className="w-[100px]">Gross Up</TableHead>
                 <TableHead className="w-[140px]">Valor Bruto</TableHead>
@@ -102,7 +103,7 @@ export function CostSection({ type, items, onChange }: CostSectionProps) {
             <TableBody>
               {items.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center text-muted-foreground py-6">
+                  <TableCell colSpan={7} className="text-center text-muted-foreground py-6">
                     Nenhuma despesa adicionada
                   </TableCell>
                 </TableRow>
@@ -118,7 +119,7 @@ export function CostSection({ type, items, onChange }: CostSectionProps) {
               )}
               {items.length > 0 && (
                 <TableRow className="bg-muted/30 font-semibold">
-                  <TableCell>TOTAL</TableCell>
+                  <TableCell colSpan={2}>TOTAL</TableCell>
                   <TableCell colSpan={2}></TableCell>
                   <TableCell className="text-primary font-bold">
                     {formatCurrency(total)}
