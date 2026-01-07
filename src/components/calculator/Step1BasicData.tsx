@@ -18,6 +18,7 @@ export interface EmissaoData {
   categoria: string;
   oferta: string;
   veiculo: string;
+  lastro: string;
   quantidade_series: string;
   series: Serie[];
 }
@@ -31,6 +32,25 @@ export function Step1BasicData({ data, onChange }: Step1Props) {
   const handleChange = (field: keyof EmissaoData, value: string | Serie[]) => {
     onChange({ ...data, [field]: value });
   };
+
+  // Lógica condicional: CRI/CRA usam Lastro, DEB/CR usam Oferta/Veículo
+  const showLastro = ['CRI', 'CRA'].includes(data.categoria);
+  const showOfertaVeiculo = ['DEB', 'CR', 'NC'].includes(data.categoria);
+
+  // Limpar campos quando categoria muda
+  useEffect(() => {
+    if (showLastro) {
+      // Limpar oferta e veiculo quando mudar para CRI/CRA
+      if (data.oferta || data.veiculo) {
+        onChange({ ...data, oferta: '', veiculo: '' });
+      }
+    } else if (showOfertaVeiculo) {
+      // Limpar lastro quando mudar para DEB/CR/NC
+      if (data.lastro) {
+        onChange({ ...data, lastro: '' });
+      }
+    }
+  }, [data.categoria]);
 
   // Update series array when quantidade_series changes
   useEffect(() => {
@@ -114,46 +134,86 @@ export function Step1BasicData({ data, onChange }: Step1Props) {
               </SelectContent>
             </Select>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="oferta">Tipo de Oferta *</Label>
-            <Select value={data.oferta} onValueChange={(value) => handleChange('oferta', value)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Oferta Privada Pura">Oferta Privada Pura</SelectItem>
-                <SelectItem value="Oferta Privada Cetipada">Oferta Privada Cetipada</SelectItem>
-                <SelectItem value="Oferta CVM 160">Oferta CVM 160</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+
+          {/* Campos condicionais: Lastro para CRI/CRA */}
+          {showLastro && (
+            <div className="space-y-2">
+              <Label htmlFor="lastro">Lastro *</Label>
+              <Select value={data.lastro} onValueChange={(value) => handleChange('lastro', value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o lastro" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="origem">Origem</SelectItem>
+                  <SelectItem value="destinacao">Destinação</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* Campos condicionais: Oferta para DEB/CR/NC */}
+          {showOfertaVeiculo && (
+            <div className="space-y-2">
+              <Label htmlFor="oferta">Tipo de Oferta *</Label>
+              <Select value={data.oferta} onValueChange={(value) => handleChange('oferta', value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Oferta Privada Pura">Oferta Privada Pura</SelectItem>
+                  <SelectItem value="Oferta Privada Cetipada">Oferta Privada Cetipada</SelectItem>
+                  <SelectItem value="Oferta CVM 160">Oferta CVM 160</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-2">
-            <Label htmlFor="veiculo">Veículo *</Label>
-            <Select value={data.veiculo} onValueChange={(value) => handleChange('veiculo', value)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Veículo Exclusivo">Veículo Exclusivo</SelectItem>
-                <SelectItem value="Patrimônio Separado">Patrimônio Separado</SelectItem>
-              </SelectContent>
-            </Select>
+        {/* Veículo - apenas para DEB/CR/NC */}
+        {showOfertaVeiculo && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <Label htmlFor="veiculo">Veículo *</Label>
+              <Select value={data.veiculo} onValueChange={(value) => handleChange('veiculo', value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Veículo Exclusivo">Veículo Exclusivo</SelectItem>
+                  <SelectItem value="Patrimônio Separado">Patrimônio Separado</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="series">Quantidade de Séries *</Label>
+              <Input
+                id="series"
+                type="number"
+                min="1"
+                placeholder="1"
+                value={data.quantidade_series}
+                onChange={(e) => handleChange('quantidade_series', e.target.value)}
+              />
+            </div>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="series">Quantidade de Séries *</Label>
-            <Input
-              id="series"
-              type="number"
-              min="1"
-              placeholder="1"
-              value={data.quantidade_series}
-              onChange={(e) => handleChange('quantidade_series', e.target.value)}
-            />
+        )}
+
+        {/* Quantidade de séries para CRI/CRA */}
+        {showLastro && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <Label htmlFor="series">Quantidade de Séries *</Label>
+              <Input
+                id="series"
+                type="number"
+                min="1"
+                placeholder="1"
+                value={data.quantidade_series}
+                onChange={(e) => handleChange('quantidade_series', e.target.value)}
+              />
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Dynamic Series Table */}
         {data.series.length > 0 && (

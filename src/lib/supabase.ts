@@ -8,6 +8,7 @@ export interface Emissao {
   categoria: 'DEB' | 'CRA' | 'CRI' | 'NC' | 'CR';
   oferta: string;
   veiculo: string;
+  lastro?: string;
   volume: number;
   quantidade_series: number;
   status_proposta: string;
@@ -15,10 +16,21 @@ export interface Emissao {
   series?: { numero: number; valor_emissao: number }[];
 }
 
+// Interface para custos no formato antigo (compatibilidade)
 export interface Custo {
-  tipo: string;
-  valor: number;
+  tipo?: string;
+  valor?: number;
   descricao?: string;
+  // Campos do novo formato
+  papel?: string;
+  id_prestador?: string | null;
+  tipo_preco?: string;
+  preco_upfront?: number;
+  preco_recorrente?: number;
+  periodicidade?: string | null;
+  gross_up?: number;
+  valor_upfront_bruto?: number;
+  valor_recorrente_bruto?: number;
 }
 
 export interface FetchCustosParams {
@@ -208,7 +220,7 @@ export async function fetchCustosPorCombinacao(params: FetchCustosParams) {
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Erro ao buscar custos',
-      data: { upfront: [], anual: [], mensal: [] },
+      data: { upfront: [], anual: [], mensal: [], custos: [] },
       custodia_debenture: [],
       totais: { total_upfront: 0, total_anual: 0, total_mensal: 0, total_primeiro_ano: 0 }
     };

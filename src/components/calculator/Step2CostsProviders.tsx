@@ -1,7 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Bookmark, Save, TrendingUp } from 'lucide-react';
+import { Bookmark, Save, TrendingUp, AlertCircle } from 'lucide-react';
 import { CostSection, type CostItem, type CostType } from './CostSection';
+
+export type { CostItem } from './CostSection';
 
 export interface CostsData {
   upfront: CostItem[];
@@ -14,38 +16,6 @@ interface Step2Props {
   volume: number;
   onChange: (data: CostsData) => void;
 }
-
-const defaultUpfrontItems: CostItem[] = [
-  { id: '1', prestador: 'Fee de Estruturação', valor: 0, grossUp: 15, valorBruto: 0, tipo: 'input' },
-  { id: '2', prestador: 'Assessor Legal', valor: 0, grossUp: 15, valorBruto: 0, tipo: 'input' },
-  { id: '3', prestador: 'CETIP - Registro Ativo', valor: 6714.50, grossUp: 0, valorBruto: 6714.50, tipo: 'calculado' },
-  { id: '4', prestador: 'Registro Cartório', valor: 8547.03, grossUp: 0, valorBruto: 8547.03, tipo: 'calculado' },
-  { id: '5', prestador: 'Publicação AGE', valor: 8000, grossUp: 0, valorBruto: 8000, tipo: 'auto' },
-  { id: '6', prestador: 'Custodiante do Lastro', valor: 8000, grossUp: 0, valorBruto: 8000, tipo: 'auto' },
-  { id: '7', prestador: 'Implantação do Escriturador', valor: 2000, grossUp: 0, valorBruto: 2000, tipo: 'auto' },
-  { id: '8', prestador: 'Escriturador (1ª Parcela)', valor: 6000, grossUp: 0, valorBruto: 6000, tipo: 'auto' },
-  { id: '9', prestador: 'Liquidante (1ª Parcela)', valor: 4000, grossUp: 0, valorBruto: 4000, tipo: 'auto' },
-];
-
-const defaultAnualItems: CostItem[] = [
-  { id: '10', prestador: 'Custodiante do Lastro', valor: 8000, grossUp: 0, valorBruto: 8000, tipo: 'auto' },
-  { id: '11', prestador: 'Escriturador', valor: 6000, grossUp: 0, valorBruto: 6000, tipo: 'auto' },
-  { id: '12', prestador: 'Liquidante', valor: 4000, grossUp: 0, valorBruto: 4000, tipo: 'auto' },
-  { id: '13', prestador: 'Auditoria Patrimônio Separado', valor: 6000, grossUp: 0, valorBruto: 6000, tipo: 'auto' },
-  { id: '14', prestador: 'Contabilidade Patrimônio Separado', valor: 3600, grossUp: 0, valorBruto: 3600, tipo: 'auto' },
-];
-
-const defaultMensalItems: CostItem[] = [
-  { id: '15', prestador: 'Gestão Securitizadora', valor: 0, grossUp: 0, valorBruto: 0, tipo: 'input' },
-  { id: '16', prestador: 'B3/CETIP - Custódia', valor: 262.50, grossUp: 0, valorBruto: 262.50, tipo: 'calculado' },
-  { id: '17', prestador: 'Contabilidade Patrimônio Separado', valor: 600, grossUp: 0, valorBruto: 600, tipo: 'auto' },
-];
-
-export const defaultCostsData: CostsData = {
-  upfront: defaultUpfrontItems,
-  anual: defaultAnualItems,
-  mensal: defaultMensalItems,
-};
 
 export function Step2CostsProviders({ costsData, volume, onChange }: Step2Props) {
   const formatCurrency = (value: number) => {
@@ -68,8 +38,26 @@ export function Step2CostsProviders({ costsData, volume, onChange }: Step2Props)
 
   const percentualVolume = volume > 0 ? ((custoPrimeiroAno / volume) * 100).toFixed(2) : '0.00';
 
+  const hasCosts = costsData.upfront.length > 0 || costsData.anual.length > 0 || costsData.mensal.length > 0;
+
   return (
     <div className="space-y-6">
+      {!hasCosts && (
+        <Card className="border-warning/50 bg-warning/5">
+          <CardContent className="py-6">
+            <div className="flex items-center gap-3 text-warning">
+              <AlertCircle className="h-5 w-5" />
+              <div>
+                <p className="font-medium">Nenhum custo encontrado para esta combinação</p>
+                <p className="text-sm text-muted-foreground">
+                  Você pode adicionar custos manualmente nas seções abaixo.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <CostSection
         type="upfront"
         items={costsData.upfront}

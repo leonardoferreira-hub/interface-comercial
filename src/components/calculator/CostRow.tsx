@@ -14,6 +14,10 @@ export interface CostItem {
   grossUp: number;
   valorBruto: number;
   tipo: 'input' | 'calculado' | 'auto';
+  // Campos adicionais para integração com Supabase
+  id_prestador?: string | null;
+  papel?: string;
+  periodicidade?: string | null;
 }
 
 interface CostRowProps {
