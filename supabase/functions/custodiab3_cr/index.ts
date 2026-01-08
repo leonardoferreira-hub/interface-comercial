@@ -5,8 +5,9 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Custódia B3 para CR: 0.000800% do Volume de Emissão
-// Aplicável a: CR (público e privado cetipado)
+// Custódia B3 para CR/CRI: 0.000800% do Volume de Emissão
+// Aplicável a: CR (público e privado cetipado) e CRI
+// Periodicidade: MENSAL
 const ALIQUOTA = 0.000800 / 100; // 0.000800% = 0.0000080
 
 serve(async (req) => {
@@ -42,12 +43,12 @@ serve(async (req) => {
       JSON.stringify({
         success: true,
         data: {
-          nome: "Custódia B3 - CR",
+          nome: "Custódia B3 - CR/CRI",
           papel: "Custódia B3",
           valor_total: valorTotal,
           tipo_custo: "variavel",
-          periodicidade: "upfront",
-          formula: "0.000800% × Volume Emissão",
+          periodicidade: "mensal",
+          formula: "0.000800% × Volume Emissão (mensal)",
           detalhes: {
             aliquota: "0.000800%",
             volume: volume,
