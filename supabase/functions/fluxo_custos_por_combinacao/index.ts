@@ -255,9 +255,11 @@ serve(async (req) => {
     let todosCustos: any[] = [];
 
     // 1. Buscar custos da tabela principal (categoria + oferta/lastro)
+    // Usamos views no schema public que apontam para base_custos
     if (tabela) {
+      console.log(`🔎 [custos-combinacao] Buscando custos fixos na view public.${tabela}`);
+      
       const { data: custosPrincipais, error: errorPrincipal } = await supabase
-        .schema('base_custos')
         .from(tabela)
         .select(`
           *,
@@ -273,7 +275,7 @@ serve(async (req) => {
           hint: errorPrincipal.hint
         });
       } else {
-        console.log(`✅ [custos-combinacao] ${(custosPrincipais || []).length} custos FIXOS encontrados na tabela base_custos.${tabela}`);
+        console.log(`✅ [custos-combinacao] ${(custosPrincipais || []).length} custos FIXOS encontrados na view public.${tabela}`);
         if (custosPrincipais && custosPrincipais.length > 0) {
           console.log(`📋 [custos-combinacao] Papéis encontrados:`, custosPrincipais.map((c: any) => c.papel).join(', '));
         }
@@ -294,8 +296,9 @@ serve(async (req) => {
       console.log(`🚗 [custos-combinacao] Tabela veículo: ${tabelaVeiculo} (key: ${veiculoNormalizado})`);
 
       if (tabelaVeiculo) {
+        console.log(`🔎 [custos-combinacao] Buscando custos veículo na view public.${tabelaVeiculo}`);
+        
         const { data: custosVeiculo, error: errorVeiculo } = await supabase
-          .schema('base_custos')
           .from(tabelaVeiculo)
           .select(`
             *,
@@ -311,7 +314,7 @@ serve(async (req) => {
             hint: errorVeiculo.hint
           });
         } else {
-          console.log(`✅ [custos-combinacao] ${(custosVeiculo || []).length} custos FIXOS (veículo) encontrados na tabela base_custos.${tabelaVeiculo}`);
+          console.log(`✅ [custos-combinacao] ${(custosVeiculo || []).length} custos FIXOS (veículo) encontrados na view public.${tabelaVeiculo}`);
           if (custosVeiculo && custosVeiculo.length > 0) {
             console.log(`📋 [custos-combinacao] Papéis veículo:`, custosVeiculo.map((c: any) => c.papel).join(', '));
           }
