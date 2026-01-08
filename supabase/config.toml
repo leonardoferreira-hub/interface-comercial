@@ -1,5 +1,9 @@
 project_id = "gthtvpujwukbfgokghne"
 
+[api]
+schemas = ["public", "base_custos", "graphql_public"]
+extra_search_path = ["public", "extensions", "base_custos"]
+
 [functions.fluxo-0-listar-emissoes]
 verify_jwt = false
 
