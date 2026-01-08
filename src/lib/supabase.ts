@@ -68,7 +68,9 @@ export async function detalhesEmissao(id: string) {
   console.log('🔍 [detalhesEmissao] Buscando ID:', id);
 
   try {
-    const { data, error } = await supabase.functions.invoke(`fluxo-0-detalhes-emissao/${id}`);
+    const { data, error } = await supabase.functions.invoke('fluxo-0-detalhes-emissao', {
+      body: { id },
+    });
 
     if (error) {
       console.error('💥 [detalhesEmissao] Erro:', error);
