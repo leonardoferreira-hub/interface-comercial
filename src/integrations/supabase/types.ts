@@ -1391,6 +1391,7 @@ export type Database = {
           id_emissao: string
           numero: number
           percentual_volume: number | null
+          prazo: number | null
           taxa_juros: number | null
           valor_emissao: number
         }
@@ -1402,6 +1403,7 @@ export type Database = {
           id_emissao: string
           numero: number
           percentual_volume?: number | null
+          prazo?: number | null
           taxa_juros?: number | null
           valor_emissao: number
         }
@@ -1413,6 +1415,7 @@ export type Database = {
           id_emissao?: string
           numero?: number
           percentual_volume?: number | null
+          prazo?: number | null
           taxa_juros?: number | null
           valor_emissao?: number
         }

@@ -212,7 +212,8 @@ export default function Calculator() {
         quantidade_series: basicData.series.length,
         series: basicData.series.map(s => ({
           numero: s.numero,
-          valor_emissao: s.valor_emissao
+          valor_emissao: s.valor_emissao,
+          prazo: s.prazo || null
         }))
       };
 
