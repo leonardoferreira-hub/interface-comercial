@@ -283,8 +283,36 @@ export default function Calculator() {
 
       console.log('🧾 [Calculator] totais calculados:', totais);
 
+      // Extrair custos por série (Registro B3 e Custódia B3)
+      const custosSeries: Array<{ numero: number; registro_b3: number; custodia_b3: number }> = [];
+      
+      // Buscar detalhes por série dos custos variáveis (usando 'prestador' ou 'papel')
+      const custoRegistroB3 = costsData.upfront.find(c => c.prestador === 'Registro B3' || c.papel === 'Registro B3');
+      const custoCustodiaB3 = costsData.upfront.find(c => c.prestador === 'Custódia B3' || c.papel === 'Custódia B3');
+      
+      // Calcular volume total das séries
+      const volumeTotal = basicData.series.reduce((sum, s) => sum + (s.valor_emissao || 0), 0);
+      
+      // Se temos dados de séries no basicData, criar entradas para cada série
+      if (basicData.series && basicData.series.length > 0) {
+        basicData.series.forEach((serie) => {
+          const serieVolume = serie.valor_emissao || 0;
+          
+          // Calcular proporcionalmente os custos por série
+          const proporcao = volumeTotal > 0 ? serieVolume / volumeTotal : 0;
+          
+          custosSeries.push({
+            numero: serie.numero,
+            registro_b3: custoRegistroB3 ? custoRegistroB3.valorBruto * proporcao : 0,
+            custodia_b3: custoCustodiaB3 ? custoCustodiaB3.valorBruto * proporcao : 0,
+          });
+        });
+      }
+
+      console.log('🧾 [Calculator] custos por série:', custosSeries);
+
       if (result?.data?.id) {
-        const salvarResult = await salvarCustos(result.data.id, allCosts, totais);
+        const salvarResult = await salvarCustos(result.data.id, allCosts, totais, custosSeries);
         console.log('🧾 [Calculator] resposta salvarCustos:', salvarResult);
         if (salvarResult?.error) {
           throw new Error(salvarResult.error);

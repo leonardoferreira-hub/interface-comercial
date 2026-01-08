@@ -14,50 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      anexos: {
-        Row: {
-          categoria: string | null
-          criado_em: string | null
-          enviado_por: string | null
-          id: string
-          id_emissao: string
-          nome_arquivo: string
-          tamanho_bytes: number | null
-          tipo_arquivo: string
-          url_arquivo: string
-        }
-        Insert: {
-          categoria?: string | null
-          criado_em?: string | null
-          enviado_por?: string | null
-          id?: string
-          id_emissao: string
-          nome_arquivo: string
-          tamanho_bytes?: number | null
-          tipo_arquivo: string
-          url_arquivo: string
-        }
-        Update: {
-          categoria?: string | null
-          criado_em?: string | null
-          enviado_por?: string | null
-          id?: string
-          id_emissao?: string
-          nome_arquivo?: string
-          tamanho_bytes?: number | null
-          tipo_arquivo?: string
-          url_arquivo?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "anexos_enviado_por_fkey"
-            columns: ["enviado_por"]
-            isOneToOne: false
-            referencedRelation: "usuarios"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       assinantes: {
         Row: {
           assinado: boolean | null
@@ -946,26 +902,32 @@ export type Database = {
       custos_series: {
         Row: {
           criado_em: string | null
+          custodia_b3: number | null
           id: string
           id_prestador: string | null
           id_serie: string
           papel: string
+          registro_b3: number | null
           valor: number
         }
         Insert: {
           criado_em?: string | null
+          custodia_b3?: number | null
           id?: string
           id_prestador?: string | null
           id_serie: string
           papel: string
+          registro_b3?: number | null
           valor: number
         }
         Update: {
           criado_em?: string | null
+          custodia_b3?: number | null
           id?: string
           id_prestador?: string | null
           id_serie?: string
           papel?: string
+          registro_b3?: number | null
           valor?: number
         }
         Relationships: [
