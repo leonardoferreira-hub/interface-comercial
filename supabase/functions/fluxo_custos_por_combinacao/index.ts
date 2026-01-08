@@ -257,6 +257,7 @@ serve(async (req) => {
     // 1. Buscar custos da tabela principal (categoria + oferta/lastro)
     if (tabela) {
       const { data: custosPrincipais, error: errorPrincipal } = await supabase
+        .schema('base_custos')
         .from(tabela)
         .select(`
           *,
@@ -286,6 +287,7 @@ serve(async (req) => {
 
       if (tabelaVeiculo) {
         const { data: custosVeiculo, error: errorVeiculo } = await supabase
+          .schema('base_custos')
           .from(tabelaVeiculo)
           .select(`
             *,
