@@ -96,34 +96,19 @@ serve(async (req) => {
 
     // Inserir linhas de custos
     if (custos && Array.isArray(custos) && custos.length > 0) {
-      const linhasData = custos.map((custo: any) => {
-        // Suporte para formato antigo (tipo/valor) e novo (papel/preco_upfront)
-        const papel = custo.papel || custo.tipo || "Não especificado";
-        const isUpfront = papel.toLowerCase().includes("upfront");
-        const isAnual = papel.toLowerCase().includes("anual");
-        const isMensal = papel.toLowerCase().includes("mensal");
-        
-        let periodicidade = custo.periodicidade || null;
-        if (!periodicidade) {
-          if (isMensal) periodicidade = "mensal";
-          else if (isAnual) periodicidade = "anual";
-        }
-
-        const valor = custo.valor || 0;
-        
-        return {
-          id_custos_emissao: custosEmissaoId,
-          papel,
-          id_prestador: custo.id_prestador || null,
-          tipo_preco: custo.tipo_preco || (isUpfront ? "fixo" : "recorrente"),
-          preco_upfront: isUpfront ? (custo.preco_upfront || valor) : 0,
-          preco_recorrente: !isUpfront ? (custo.preco_recorrente || valor) : 0,
-          periodicidade,
-          gross_up: custo.gross_up || 0,
-          valor_upfront_bruto: isUpfront ? (custo.valor_upfront_bruto || valor) : 0,
-          valor_recorrente_bruto: !isUpfront ? (custo.valor_recorrente_bruto || valor) : 0,
-        };
-      });
+      // Mapeamento direto - usar campos já preparados pelo frontend
+      const linhasData = custos.map((custo: any) => ({
+        id_custos_emissao: custosEmissaoId,
+        papel: custo.papel || "Não especificado",
+        id_prestador: custo.id_prestador || null,
+        tipo_preco: custo.tipo_preco || "fixo",
+        preco_upfront: custo.preco_upfront || 0,
+        preco_recorrente: custo.preco_recorrente || 0,
+        periodicidade: custo.periodicidade || null,
+        gross_up: custo.gross_up || 0,
+        valor_upfront_bruto: custo.valor_upfront_bruto || 0,
+        valor_recorrente_bruto: custo.valor_recorrente_bruto || 0,
+      }));
 
       console.log(`📊 [salvar-custos] Linhas preparadas:`, JSON.stringify(linhasData.slice(0, 2)));
 

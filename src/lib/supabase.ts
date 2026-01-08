@@ -128,12 +128,22 @@ export async function atualizarEmissao(id: string, emissaoData: Partial<Emissao>
   }
 }
 
-export async function salvarCustos(id_emissao: string, custos: Custo[]) {
-  console.log('💰 [salvarCustos] ID:', id_emissao, 'Custos:', custos.length);
+export async function salvarCustos(
+  id_emissao: string, 
+  custos: Custo[], 
+  totais?: {
+    total_upfront: number;
+    total_anual: number;
+    total_mensal: number;
+    total_primeiro_ano: number;
+    total_anos_subsequentes: number;
+  }
+) {
+  console.log('💰 [salvarCustos] ID:', id_emissao, 'Custos:', custos.length, 'Totais:', totais);
 
   try {
     const { data, error } = await supabase.functions.invoke('fluxo-1-salvar-custos', {
-      body: { id_emissao, custos },
+      body: { id_emissao, custos, totais },
     });
 
     if (error) {

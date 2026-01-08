@@ -266,8 +266,25 @@ export default function Calculator() {
 
       console.log('🧾 [Calculator] custos para salvar:', { count: allCosts.length, allCosts });
 
-      if (allCosts.length > 0 && result?.data?.id) {
-        const salvarResult = await salvarCustos(result.data.id, allCosts);
+      // Calcular totais para salvar
+      const totalUpfront = costsData.upfront.reduce((sum, item) => sum + item.valorBruto, 0);
+      const totalAnual = costsData.anual.reduce((sum, item) => sum + item.valorBruto, 0);
+      const totalMensal = costsData.mensal.reduce((sum, item) => sum + item.valorBruto, 0);
+      const custoPrimeiroAno = totalUpfront + totalAnual + (totalMensal * 12);
+      const custoAnosSubsequentes = totalAnual + (totalMensal * 12);
+
+      const totais = {
+        total_upfront: totalUpfront,
+        total_anual: totalAnual,
+        total_mensal: totalMensal,
+        total_primeiro_ano: custoPrimeiroAno,
+        total_anos_subsequentes: custoAnosSubsequentes,
+      };
+
+      console.log('🧾 [Calculator] totais calculados:', totais);
+
+      if (result?.data?.id) {
+        const salvarResult = await salvarCustos(result.data.id, allCosts, totais);
         console.log('🧾 [Calculator] resposta salvarCustos:', salvarResult);
         if (salvarResult?.error) {
           throw new Error(salvarResult.error);
