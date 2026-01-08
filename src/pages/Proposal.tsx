@@ -84,8 +84,8 @@ export default function Proposal() {
     }).format(value);
   };
 
-  // Group costs by type
-  const groupCostsByType = (custos: any[]) => {
+  // Group costs by type - uses custos_linhas format from DB
+  const groupCostsByType = (custosData: any) => {
     const groups: Record<string, any[]> = {
       upfront: [],
       anual: [],
@@ -93,16 +93,26 @@ export default function Proposal() {
       outros: [],
     };
 
-    custos.forEach((custo) => {
-      const tipo = custo.tipo.toLowerCase();
-      if (tipo.includes('upfront')) {
-        groups.upfront.push(custo);
-      } else if (tipo.includes('anual')) {
-        groups.anual.push(custo);
-      } else if (tipo.includes('mensal')) {
-        groups.mensal.push(custo);
-      } else {
-        groups.outros.push(custo);
+    // Handle custos_linhas format from custos_emissao
+    const linhas = custosData?.custos_linhas || [];
+    
+    linhas.forEach((linha: any) => {
+      // Add upfront cost if exists
+      if (linha.preco_upfront > 0 || linha.valor_upfront_bruto > 0) {
+        groups.upfront.push({
+          tipo: linha.papel || 'Custo',
+          valor: linha.valor_upfront_bruto || linha.preco_upfront,
+        });
+      }
+      
+      // Add recurrent cost if exists
+      if (linha.preco_recorrente > 0 || linha.valor_recorrente_bruto > 0) {
+        const periodicidade = linha.periodicidade?.toLowerCase() || 'anual';
+        const targetGroup = periodicidade === 'mensal' ? groups.mensal : groups.anual;
+        targetGroup.push({
+          tipo: linha.papel || 'Custo',
+          valor: linha.valor_recorrente_bruto || linha.preco_recorrente,
+        });
       }
     });
 
@@ -160,7 +170,7 @@ export default function Proposal() {
   }
 
   const costGroups = emissao.custos ? groupCostsByType(emissao.custos) : { upfront: [], anual: [], mensal: [], outros: [] };
-  const totalCosts = emissao.custos?.reduce((sum: number, c: any) => sum + c.valor, 0) || 0;
+  const totalCosts = emissao.custos?.total_primeiro_ano || 0;
   const percentualVolume = emissao.volume > 0 ? ((totalCosts / emissao.volume) * 100).toFixed(2) : '0.00';
 
   return (
@@ -177,9 +187,9 @@ export default function Proposal() {
             </Button>
             <h2 className="text-2xl font-bold">Proposta - {emissao.numero_emissao}</h2>
             <div className="flex items-center gap-2 mt-1">
-              <StatusBadge status={emissao.status_proposta} />
+              <StatusBadge status={emissao.status || emissao.status_proposta || 'rascunho'} />
               <span className="text-sm text-muted-foreground">
-                Criada em {new Date(emissao.data_criacao).toLocaleDateString('pt-BR')}
+                Criada em {new Date(emissao.criado_em || emissao.data_criacao).toLocaleDateString('pt-BR')}
               </span>
             </div>
           </div>
@@ -213,7 +223,7 @@ export default function Proposal() {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Categoria</p>
-                  <p className="font-semibold">{emissao.categoria}</p>
+                  <p className="font-semibold">{emissao.categorias?.codigo || emissao.categoria}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Volume</p>
@@ -240,7 +250,7 @@ export default function Proposal() {
           </Card>
 
           {/* Costs by Category */}
-          {emissao.custos && emissao.custos.length > 0 && (
+          {emissao.custos && (costGroups.upfront.length > 0 || costGroups.anual.length > 0 || costGroups.mensal.length > 0) && (
             <>
               {/* Upfront Costs */}
               {costGroups.upfront.length > 0 && (
@@ -260,7 +270,7 @@ export default function Proposal() {
                         <TableBody>
                           {costGroups.upfront.map((custo: any, index: number) => (
                             <TableRow key={index}>
-                              <TableCell>{custo.tipo.replace('Upfront - ', '')}</TableCell>
+                              <TableCell>{custo.tipo}</TableCell>
                               <TableCell className="text-right">{formatCurrency(custo.valor)}</TableCell>
                             </TableRow>
                           ))}
@@ -295,7 +305,7 @@ export default function Proposal() {
                         <TableBody>
                           {costGroups.anual.map((custo: any, index: number) => (
                             <TableRow key={index}>
-                              <TableCell>{custo.tipo.replace('Anual - ', '')}</TableCell>
+                              <TableCell>{custo.tipo}</TableCell>
                               <TableCell className="text-right">{formatCurrency(custo.valor)}</TableCell>
                             </TableRow>
                           ))}
@@ -330,7 +340,7 @@ export default function Proposal() {
                         <TableBody>
                           {costGroups.mensal.map((custo: any, index: number) => (
                             <TableRow key={index}>
-                              <TableCell>{custo.tipo.replace('Mensal - ', '')}</TableCell>
+                              <TableCell>{custo.tipo}</TableCell>
                               <TableCell className="text-right">{formatCurrency(custo.valor)}</TableCell>
                             </TableRow>
                           ))}

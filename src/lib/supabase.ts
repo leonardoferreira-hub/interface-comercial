@@ -110,8 +110,8 @@ export async function atualizarEmissao(id: string, emissaoData: Partial<Emissao>
   console.log('✏️ [atualizarEmissao] ID:', id, 'Dados:', emissaoData);
 
   try {
-    const { data, error } = await supabase.functions.invoke(`fluxo-1-atualizar-emissao/${id}`, {
-      body: emissaoData,
+    const { data, error } = await supabase.functions.invoke('fluxo-1-atualizar-emissao', {
+      body: { id, ...emissaoData },
     });
 
     if (error) {
