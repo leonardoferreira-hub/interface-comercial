@@ -28,6 +28,156 @@ const tabelaVeiculos: Record<string, string> = {
   "patrimonio_separado": "custos_patrimonio_separado",
 };
 
+interface Serie {
+  numero: number;
+  valor_emissao: number;
+  prazo?: number;
+}
+
+// Funções de cálculo de custos variáveis (inline para evitar chamadas HTTP internas)
+
+function calcularCustodiab3Cr(volume: number): number {
+  return volume * (0.000800 / 100);
+}
+
+function calcularCustodiab3Cra(volume: number): number {
+  return volume * (0.000300 / 100);
+}
+
+function calcularCustodiab3Deb(volume: number): number {
+  const faixas = [
+    { limite: 100_000_000, aliquota: 0.000167 / 100 },
+    { limite: 500_000_000, aliquota: 0.000100 / 100 },
+    { limite: 1_000_000_000, aliquota: 0.000067 / 100 },
+    { limite: Infinity, aliquota: 0.000033 / 100 },
+  ];
+
+  let valorTotal = 0;
+  let volumeRestante = volume;
+  let limiteAnterior = 0;
+
+  for (const faixa of faixas) {
+    if (volumeRestante <= 0) break;
+    const faixaMaxima = faixa.limite - limiteAnterior;
+    const volumeNaFaixa = Math.min(volumeRestante, faixaMaxima);
+    valorTotal += volumeNaFaixa * faixa.aliquota;
+    volumeRestante -= volumeNaFaixa;
+    limiteAnterior = faixa.limite;
+  }
+
+  return valorTotal;
+}
+
+function calcularAnbimaCri(volume: number): number {
+  const valorCalculado = volume * (0.003968 / 100);
+  return Math.max(1416.00, Math.min(2830.00, valorCalculado));
+}
+
+function calcularTaxaCvm(volume: number): number {
+  return volume * (0.03 / 100);
+}
+
+function calcularAnbimaTodos(volume: number): number {
+  const valorCalculado = volume * (0.002778 / 100);
+  return Math.max(9919.00, Math.min(69436.00, valorCalculado));
+}
+
+function calcularRegistrob3Cr(series: Serie[], volume: number): number {
+  const faixas = [
+    { limite: 500_000_000, aliquota: 0.0030 / 100 },
+    { limite: 1_000_000_000, aliquota: 0.0020 / 100 },
+    { limite: 5_000_000_000, aliquota: 0.0010 / 100 },
+    { limite: Infinity, aliquota: 0.0005 / 100 },
+  ];
+
+  const seriesParaCalculo = series.length > 0 ? series : [{ numero: 1, valor_emissao: volume }];
+  let valorTotalGeral = 0;
+
+  for (const serie of seriesParaCalculo) {
+    let valorSerie = 0;
+    let volumeRestante = serie.valor_emissao;
+    let limiteAnterior = 0;
+
+    for (const faixa of faixas) {
+      if (volumeRestante <= 0) break;
+      const faixaMaxima = faixa.limite - limiteAnterior;
+      const volumeNaFaixa = Math.min(volumeRestante, faixaMaxima);
+      valorSerie += volumeNaFaixa * faixa.aliquota;
+      volumeRestante -= volumeNaFaixa;
+      limiteAnterior = faixa.limite;
+    }
+
+    valorTotalGeral += valorSerie;
+  }
+
+  return valorTotalGeral;
+}
+
+function calcularRegistrob3DebPub(series: Serie[], volume: number, prazoGeral: number = 1): number {
+  const faixas = [
+    { limite: 100_000_000, aliquota: 0.0020 / 100 },
+    { limite: 500_000_000, aliquota: 0.0015 / 100 },
+    { limite: 1_000_000_000, aliquota: 0.0010 / 100 },
+    { limite: Infinity, aliquota: 0.0005 / 100 },
+  ];
+
+  const seriesParaCalculo = series.length > 0 ? series : [{ numero: 1, valor_emissao: volume, prazo: prazoGeral }];
+  let valorTotalGeral = 0;
+
+  for (const serie of seriesParaCalculo) {
+    const prazo = serie.prazo || prazoGeral || 1;
+    let valorBase = 0;
+    let volumeRestante = serie.valor_emissao;
+    let limiteAnterior = 0;
+
+    for (const faixa of faixas) {
+      if (volumeRestante <= 0) break;
+      const faixaMaxima = faixa.limite - limiteAnterior;
+      const volumeNaFaixa = Math.min(volumeRestante, faixaMaxima);
+      valorBase += volumeNaFaixa * faixa.aliquota;
+      volumeRestante -= volumeNaFaixa;
+      limiteAnterior = faixa.limite;
+    }
+
+    valorTotalGeral += valorBase * prazo;
+  }
+
+  return valorTotalGeral;
+}
+
+function calcularRegistrob3DebPriv(series: Serie[], volume: number, prazoGeral: number = 1): number {
+  // 50% das taxas públicas
+  const faixas = [
+    { limite: 100_000_000, aliquota: 0.0010 / 100 },
+    { limite: 500_000_000, aliquota: 0.00075 / 100 },
+    { limite: 1_000_000_000, aliquota: 0.0005 / 100 },
+    { limite: Infinity, aliquota: 0.00025 / 100 },
+  ];
+
+  const seriesParaCalculo = series.length > 0 ? series : [{ numero: 1, valor_emissao: volume, prazo: prazoGeral }];
+  let valorTotalGeral = 0;
+
+  for (const serie of seriesParaCalculo) {
+    const prazo = serie.prazo || prazoGeral || 1;
+    let valorBase = 0;
+    let volumeRestante = serie.valor_emissao;
+    let limiteAnterior = 0;
+
+    for (const faixa of faixas) {
+      if (volumeRestante <= 0) break;
+      const faixaMaxima = faixa.limite - limiteAnterior;
+      const volumeNaFaixa = Math.min(volumeRestante, faixaMaxima);
+      valorBase += volumeNaFaixa * faixa.aliquota;
+      volumeRestante -= volumeNaFaixa;
+      limiteAnterior = faixa.limite;
+    }
+
+    valorTotalGeral += valorBase * prazo;
+  }
+
+  return valorTotalGeral;
+}
+
 serve(async (req) => {
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
@@ -45,6 +195,7 @@ serve(async (req) => {
     let veiculo: string | null = null;
     let lastro: string | null = null;
     let volume = 0;
+    let series: Serie[] = [];
 
     if (req.method === "POST") {
       const body = await req.json();
@@ -53,6 +204,7 @@ serve(async (req) => {
       veiculo = body.veiculo;
       lastro = body.lastro;
       volume = parseFloat(body.volume) || 0;
+      series = body.series || [];
       console.log(`📥 [custos-combinacao] POST body:`, JSON.stringify(body));
     } else {
       const url = new URL(req.url);
@@ -61,9 +213,13 @@ serve(async (req) => {
       veiculo = url.searchParams.get("veiculo");
       lastro = url.searchParams.get("lastro");
       volume = parseFloat(url.searchParams.get("volume") || "0");
+      const seriesParam = url.searchParams.get("series");
+      if (seriesParam) {
+        series = JSON.parse(seriesParam);
+      }
     }
 
-    console.log(`🔍 [custos-combinacao] categoria=${categoria}, oferta=${oferta}, veiculo=${veiculo}, lastro=${lastro}, volume=${volume}`);
+    console.log(`🔍 [custos-combinacao] categoria=${categoria}, oferta=${oferta}, veiculo=${veiculo}, lastro=${lastro}, volume=${volume}, series=${series.length}`);
 
     if (!categoria) {
       return new Response(
@@ -146,7 +302,7 @@ serve(async (req) => {
       }
     }
 
-    // 3. Calcular valores
+    // 3. Calcular valores dos custos fixos
     let totalUpfront = 0;
     let totalRecorrente = 0;
 
@@ -160,9 +316,6 @@ serve(async (req) => {
         valorRecorrente = (custo.preco_recorrente || 0) * volume / 100;
       }
 
-      // NÃO aplicar gross-up aqui - o frontend calcula o valor bruto
-      // O backend retorna apenas o valor líquido e o gross_up para cálculo no front
-
       totalUpfront += valorUpfront;
       totalRecorrente += valorRecorrente;
 
@@ -171,19 +324,244 @@ serve(async (req) => {
         valor_upfront_calculado: valorUpfront,
         valor_recorrente_calculado: valorRecorrente,
         prestador_nome: custo.prestadores?.nome || null,
+        tipo_custo: "fixo",
       };
     });
+
+    // 4. Calcular custos variáveis baseado na combinação
+    const custosVariaveis: any[] = [];
+    const ofertaNorm = oferta?.toLowerCase() || "";
+    const isOfertaPublica = ofertaNorm.includes("cvm") || ofertaNorm.includes("publica");
+    const isOfertaPrivadaCetipada = ofertaNorm.includes("cetipada");
+    const isOfertaPrivadaPura = ofertaNorm.includes("pura");
+
+    if (volume > 0) {
+      // CRI: custodiab3_cr (mesma que CR), anbima_cri, registrob3_cr, taxacvm, anbima_todos
+      if (categoria === "CRI") {
+        // Custódia B3 (mesma taxa de CR para CRI)
+        const custodiaValor = calcularCustodiab3Cr(volume);
+        custosVariaveis.push({
+          papel: "Custódia B3",
+          preco_upfront: custodiaValor,
+          valor_upfront_calculado: custodiaValor,
+          valor_recorrente_calculado: 0,
+          tipo_custo: "variavel",
+          formula: "0.000800% × Volume",
+        });
+        totalUpfront += custodiaValor;
+
+        // ANBIMA CRI (específico)
+        const anbimaValor = calcularAnbimaCri(volume);
+        custosVariaveis.push({
+          papel: "Taxa ANBIMA",
+          preco_upfront: anbimaValor,
+          valor_upfront_calculado: anbimaValor,
+          valor_recorrente_calculado: 0,
+          tipo_custo: "variavel",
+          formula: "0.003968% × Volume (mín R$ 1.416, máx R$ 2.830)",
+        });
+        totalUpfront += anbimaValor;
+
+        // Registro B3
+        const registroValor = calcularRegistrob3Cr(series, volume);
+        custosVariaveis.push({
+          papel: "Registro B3",
+          preco_upfront: registroValor,
+          valor_upfront_calculado: registroValor,
+          valor_recorrente_calculado: 0,
+          tipo_custo: "variavel",
+          formula: "Tabela progressiva por série",
+        });
+        totalUpfront += registroValor;
+
+        // Taxa CVM
+        const cvmValor = calcularTaxaCvm(volume);
+        custosVariaveis.push({
+          papel: "Taxa CVM",
+          preco_upfront: cvmValor,
+          valor_upfront_calculado: cvmValor,
+          valor_recorrente_calculado: 0,
+          tipo_custo: "variavel",
+          formula: "0.03% × Volume",
+        });
+        totalUpfront += cvmValor;
+      }
+
+      // CRA: custodiab3_cra, registrob3_cr, taxacvm, anbima_todos
+      if (categoria === "CRA") {
+        const custodiaValor = calcularCustodiab3Cra(volume);
+        custosVariaveis.push({
+          papel: "Custódia B3",
+          preco_upfront: custodiaValor,
+          valor_upfront_calculado: custodiaValor,
+          valor_recorrente_calculado: 0,
+          tipo_custo: "variavel",
+          formula: "0.000300% × Volume",
+        });
+        totalUpfront += custodiaValor;
+
+        const anbimaValor = calcularAnbimaTodos(volume);
+        custosVariaveis.push({
+          papel: "Taxa ANBIMA",
+          preco_upfront: anbimaValor,
+          valor_upfront_calculado: anbimaValor,
+          valor_recorrente_calculado: 0,
+          tipo_custo: "variavel",
+          formula: "0.002778% × Volume (mín R$ 9.919, máx R$ 69.436)",
+        });
+        totalUpfront += anbimaValor;
+
+        const registroValor = calcularRegistrob3Cr(series, volume);
+        custosVariaveis.push({
+          papel: "Registro B3",
+          preco_upfront: registroValor,
+          valor_upfront_calculado: registroValor,
+          valor_recorrente_calculado: 0,
+          tipo_custo: "variavel",
+          formula: "Tabela progressiva por série",
+        });
+        totalUpfront += registroValor;
+
+        const cvmValor = calcularTaxaCvm(volume);
+        custosVariaveis.push({
+          papel: "Taxa CVM",
+          preco_upfront: cvmValor,
+          valor_upfront_calculado: cvmValor,
+          valor_recorrente_calculado: 0,
+          tipo_custo: "variavel",
+          formula: "0.03% × Volume",
+        });
+        totalUpfront += cvmValor;
+      }
+
+      // CR: custodiab3_cr, registrob3_cr, (se público: taxacvm, anbima_todos)
+      if (categoria === "CR") {
+        if (isOfertaPublica || isOfertaPrivadaCetipada) {
+          const custodiaValor = calcularCustodiab3Cr(volume);
+          custosVariaveis.push({
+            papel: "Custódia B3",
+            preco_upfront: custodiaValor,
+            valor_upfront_calculado: custodiaValor,
+            valor_recorrente_calculado: 0,
+            tipo_custo: "variavel",
+            formula: "0.000800% × Volume",
+          });
+          totalUpfront += custodiaValor;
+
+          const registroValor = calcularRegistrob3Cr(series, volume);
+          custosVariaveis.push({
+            papel: "Registro B3",
+            preco_upfront: registroValor,
+            valor_upfront_calculado: registroValor,
+            valor_recorrente_calculado: 0,
+            tipo_custo: "variavel",
+            formula: "Tabela progressiva por série",
+          });
+          totalUpfront += registroValor;
+        }
+
+        if (isOfertaPublica) {
+          const cvmValor = calcularTaxaCvm(volume);
+          custosVariaveis.push({
+            papel: "Taxa CVM",
+            preco_upfront: cvmValor,
+            valor_upfront_calculado: cvmValor,
+            valor_recorrente_calculado: 0,
+            tipo_custo: "variavel",
+            formula: "0.03% × Volume",
+          });
+          totalUpfront += cvmValor;
+
+          const anbimaValor = calcularAnbimaTodos(volume);
+          custosVariaveis.push({
+            papel: "Taxa ANBIMA",
+            preco_upfront: anbimaValor,
+            valor_upfront_calculado: anbimaValor,
+            valor_recorrente_calculado: 0,
+            tipo_custo: "variavel",
+            formula: "0.002778% × Volume (mín R$ 9.919, máx R$ 69.436)",
+          });
+          totalUpfront += anbimaValor;
+        }
+      }
+
+      // DEB: custodiab3_deb (se cetipado/público), registrob3_debpub/debpriv, (se público: taxacvm, anbima_todos)
+      if (categoria === "DEB" || categoria === "NC") {
+        if (isOfertaPublica || isOfertaPrivadaCetipada) {
+          const custodiaValor = calcularCustodiab3Deb(volume);
+          custosVariaveis.push({
+            papel: "Custódia B3",
+            preco_upfront: custodiaValor,
+            valor_upfront_calculado: custodiaValor,
+            valor_recorrente_calculado: 0,
+            tipo_custo: "variavel",
+            formula: "Tabela progressiva por faixas",
+          });
+          totalUpfront += custodiaValor;
+        }
+
+        if (isOfertaPublica) {
+          const registroValor = calcularRegistrob3DebPub(series, volume);
+          custosVariaveis.push({
+            papel: "Registro B3",
+            preco_upfront: registroValor,
+            valor_upfront_calculado: registroValor,
+            valor_recorrente_calculado: 0,
+            tipo_custo: "variavel",
+            formula: "Tabela progressiva × prazo por série",
+          });
+          totalUpfront += registroValor;
+
+          const cvmValor = calcularTaxaCvm(volume);
+          custosVariaveis.push({
+            papel: "Taxa CVM",
+            preco_upfront: cvmValor,
+            valor_upfront_calculado: cvmValor,
+            valor_recorrente_calculado: 0,
+            tipo_custo: "variavel",
+            formula: "0.03% × Volume",
+          });
+          totalUpfront += cvmValor;
+
+          const anbimaValor = calcularAnbimaTodos(volume);
+          custosVariaveis.push({
+            papel: "Taxa ANBIMA",
+            preco_upfront: anbimaValor,
+            valor_upfront_calculado: anbimaValor,
+            valor_recorrente_calculado: 0,
+            tipo_custo: "variavel",
+            formula: "0.002778% × Volume (mín R$ 9.919, máx R$ 69.436)",
+          });
+          totalUpfront += anbimaValor;
+        } else if (isOfertaPrivadaCetipada) {
+          const registroValor = calcularRegistrob3DebPriv(series, volume);
+          custosVariaveis.push({
+            papel: "Registro B3",
+            preco_upfront: registroValor,
+            valor_upfront_calculado: registroValor,
+            valor_recorrente_calculado: 0,
+            tipo_custo: "variavel",
+            formula: "Tabela progressiva × prazo por série (50% taxas)",
+          });
+          totalUpfront += registroValor;
+        }
+        // Privada pura: não tem custos variáveis B3
+      }
+    }
+
+    // 5. Combinar custos fixos e variáveis
+    const todosOsCustos = [...custosCalculados, ...custosVariaveis];
 
     // Calcular total do primeiro ano (upfront + 12 meses de recorrente mensal)
     const totalPrimeiroAno = totalUpfront + (totalRecorrente * 12);
 
-    console.log(`✅ [custos-combinacao] Total: ${custosCalculados.length} custos, upfront=${totalUpfront}, recorrente=${totalRecorrente}`);
+    console.log(`✅ [custos-combinacao] Total: ${todosOsCustos.length} custos (${custosCalculados.length} fixos, ${custosVariaveis.length} variáveis), upfront=${totalUpfront}, recorrente=${totalRecorrente}`);
 
     return new Response(
       JSON.stringify({
         success: true,
         data: {
-          custos: custosCalculados,
+          custos: todosOsCustos,
           totais: {
             total_upfront: totalUpfront,
             total_recorrente: totalRecorrente,

@@ -23,3 +23,30 @@ verify_jwt = false
 
 [functions.fluxo_custos_por_combinacao]
 verify_jwt = false
+
+[functions.custodiab3_cr]
+verify_jwt = false
+
+[functions.custodiab3_cra]
+verify_jwt = false
+
+[functions.custodiab3_deb]
+verify_jwt = false
+
+[functions.anbima_cri]
+verify_jwt = false
+
+[functions.taxacvm]
+verify_jwt = false
+
+[functions.anbima_todos]
+verify_jwt = false
+
+[functions.registrob3_cr]
+verify_jwt = false
+
+[functions.registrob3_debpub]
+verify_jwt = false
+
+[functions.registrob3_debpriv]
+verify_jwt = false

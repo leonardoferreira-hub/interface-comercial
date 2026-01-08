@@ -7,9 +7,10 @@ import { FileText } from 'lucide-react';
 import { useEffect } from 'react';
 import { CurrencyInput } from '@/components/ui/currency-input';
 
-interface Serie {
+export interface Serie {
   numero: number;
   valor_emissao: number;
+  prazo?: number; // Em anos, apenas para DEB
 }
 
 export interface EmissaoData {
@@ -36,6 +37,7 @@ export function Step1BasicData({ data, onChange }: Step1Props) {
   // Lógica condicional: CRI/CRA usam Lastro, DEB/CR usam Oferta/Veículo
   const showLastro = ['CRI', 'CRA'].includes(data.categoria);
   const showOfertaVeiculo = ['DEB', 'CR', 'NC'].includes(data.categoria);
+  const isDebenture = data.categoria === 'DEB';
 
   // Limpar campos quando categoria muda
   useEffect(() => {
@@ -63,7 +65,8 @@ export function Step1BasicData({ data, onChange }: Step1Props) {
         const existing = currentSeries.find(s => s.numero === i);
         newSeries.push({
           numero: i,
-          valor_emissao: existing?.valor_emissao || 0
+          valor_emissao: existing?.valor_emissao || 0,
+          prazo: existing?.prazo
         });
       }
       onChange({ ...data, series: newSeries });
@@ -73,6 +76,13 @@ export function Step1BasicData({ data, onChange }: Step1Props) {
   const handleSerieVolumeChange = (numero: number, valor_emissao: number) => {
     const updatedSeries = data.series.map(s =>
       s.numero === numero ? { ...s, valor_emissao } : s
+    );
+    handleChange('series', updatedSeries);
+  };
+
+  const handleSeriePrazoChange = (numero: number, prazo: number) => {
+    const updatedSeries = data.series.map(s =>
+      s.numero === numero ? { ...s, prazo } : s
     );
     handleChange('series', updatedSeries);
   };
@@ -225,6 +235,9 @@ export function Step1BasicData({ data, onChange }: Step1Props) {
                   <TableRow className="bg-muted/50">
                     <TableHead className="w-24">Série</TableHead>
                     <TableHead>Valor de Emissão (R$)</TableHead>
+                    {isDebenture && (
+                      <TableHead className="w-40">Prazo (anos)</TableHead>
+                    )}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -238,6 +251,19 @@ export function Step1BasicData({ data, onChange }: Step1Props) {
                           className="max-w-xs"
                         />
                       </TableCell>
+                      {isDebenture && (
+                        <TableCell>
+                          <Input
+                            type="number"
+                            min="1"
+                            step="1"
+                            placeholder="5"
+                            value={serie.prazo || ''}
+                            onChange={(e) => handleSeriePrazoChange(serie.numero, parseInt(e.target.value) || 0)}
+                            className="w-24"
+                          />
+                        </TableCell>
+                      )}
                     </TableRow>
                   ))}
                 </TableBody>
