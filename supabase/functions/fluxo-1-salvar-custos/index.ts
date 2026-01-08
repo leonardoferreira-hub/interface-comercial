@@ -6,6 +6,65 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Mapeamento de papel para colunas da tabela custos
+const papelToColumn: Record<string, { upfront?: string; recorrente?: string; recorrencia?: string }> = {
+  "Agente Fiduciário": { 
+    upfront: "fee_agente_fiduciario_upfront", 
+    recorrente: "fee_agente_fiduciario_recorrente",
+    recorrencia: "fee_agente_fiduciario_recorrencia"
+  },
+  "Securitizadora": { 
+    upfront: "fee_securitizadora_upfront", 
+    recorrente: "fee_securitizadora_recorrente",
+    recorrencia: "fee_securitizadora_recorrencia"
+  },
+  "Custodiante Lastro": { 
+    upfront: "fee_custodiante_lastro_upfront", 
+    recorrente: "fee_custodiante_lastro_recorrente",
+    recorrencia: "fee_custodiante_lastro_recorrencia"
+  },
+  "Liquidante": { 
+    upfront: "fee_liquidante_upfront", 
+    recorrente: "fee_liquidante_recorrente",
+    recorrencia: "fee_liquidante_recorrencia"
+  },
+  "Escriturador": { 
+    upfront: "fee_escriturador_upfront", 
+    recorrente: "fee_escriturador_recorrente",
+    recorrencia: "fee_escriturador_recorrencia"
+  },
+  "Escriturador NC": { 
+    upfront: "fee_escriturador_nc_upfront", 
+    recorrente: "fee_escriturador_nc_recorrente",
+    recorrencia: "fee_escriturador_nc_recorrencia"
+  },
+  "Contabilidade": { 
+    recorrente: "fee_contabilidade_recorrente",
+    recorrencia: "fee_contabilidade_recorrencia"
+  },
+  "Auditoria": { 
+    recorrente: "fee_auditoria_recorrente",
+    recorrencia: "fee_auditoria_recorrencia"
+  },
+  "Servicer": { 
+    upfront: "fee_servicer_upfront", 
+    recorrente: "fee_servicer_recorrente",
+    recorrencia: "fee_servicer_recorrencia"
+  },
+  "Gerenciador Obra": { 
+    upfront: "fee_gerenciador_obra_upfront", 
+    recorrente: "fee_gerenciador_obra_recorrente",
+    recorrencia: "fee_gerenciador_obra_recorrencia"
+  },
+  "Coordenador Líder": { upfront: "fee_coordenador_lider_upfront" },
+  "Assessor Legal": { upfront: "fee_assessor_legal_upfront" },
+  "Taxa CVM": { upfront: "taxa_fiscalizacao_oferta_upfront" },
+  "Taxa ANBIMA": { upfront: "taxa_anbima_upfront" },
+};
+
+// Custos que devem ser salvos por série (não na tabela custos global)
+const custosPerSerie = ["Registro B3", "Custódia B3"];
+
 serve(async (req) => {
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
@@ -18,7 +77,7 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     const body = await req.json();
-    const { id_emissao, custos, totais } = body;
+    const { id_emissao, custos, totais, custos_series } = body;
 
     if (!id_emissao) {
       return new Response(
@@ -27,9 +86,9 @@ serve(async (req) => {
       );
     }
 
-    console.log(`💰 [salvar-custos] Emissão: ${id_emissao}, custos: ${custos?.length || 0}`);
+    console.log(`💰 [salvar-custos] Emissão: ${id_emissao}, custos: ${custos?.length || 0}, custos_series: ${custos_series?.length || 0}`);
 
-    // Verificar se já existe custos_emissao para esta emissão
+    // ====== 1. SALVAR custos_emissao (totais) ======
     const { data: existingCustos } = await supabase
       .from("custos_emissao")
       .select("id")
@@ -39,8 +98,7 @@ serve(async (req) => {
     let custosEmissaoId: string;
 
     if (existingCustos) {
-      // Atualizar custos existentes
-      const { data: updated, error: updateError } = await supabase
+      const { error: updateError } = await supabase
         .from("custos_emissao")
         .update({
           total_upfront: totais?.total_upfront || 0,
@@ -51,9 +109,7 @@ serve(async (req) => {
           atualizado_em: new Date().toISOString(),
           calculado_em: new Date().toISOString(),
         })
-        .eq("id", existingCustos.id)
-        .select()
-        .single();
+        .eq("id", existingCustos.id);
 
       if (updateError) {
         console.error("❌ [salvar-custos] Erro ao atualizar custos_emissao:", updateError);
@@ -64,11 +120,8 @@ serve(async (req) => {
       }
 
       custosEmissaoId = existingCustos.id;
-
-      // Deletar linhas existentes
       await supabase.from("custos_linhas").delete().eq("id_custos_emissao", custosEmissaoId);
     } else {
-      // Criar novo custos_emissao
       const { data: created, error: createError } = await supabase
         .from("custos_emissao")
         .insert({
@@ -94,9 +147,8 @@ serve(async (req) => {
       custosEmissaoId = created.id;
     }
 
-    // Inserir linhas de custos
+    // ====== 2. SALVAR custos_linhas (detalhado normalizado) ======
     if (custos && Array.isArray(custos) && custos.length > 0) {
-      // Mapeamento direto - usar campos já preparados pelo frontend
       const linhasData = custos.map((custo: any) => ({
         id_custos_emissao: custosEmissaoId,
         papel: custo.papel || "Não especificado",
@@ -110,24 +162,134 @@ serve(async (req) => {
         valor_recorrente_bruto: custo.valor_recorrente_bruto || 0,
       }));
 
-      console.log(`📊 [salvar-custos] Linhas preparadas:`, JSON.stringify(linhasData.slice(0, 2)));
-
       const { error: linhasError } = await supabase
         .from("custos_linhas")
         .insert(linhasData);
 
       if (linhasError) {
         console.error("❌ [salvar-custos] Erro ao inserir linhas:", linhasError);
-        return new Response(
-          JSON.stringify({ success: false, error: linhasError.message }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+      } else {
+        console.log(`✅ [salvar-custos] ${linhasData.length} linhas de custos salvas em custos_linhas`);
       }
-
-      console.log(`✅ [salvar-custos] ${linhasData.length} linhas de custos salvas`);
     }
 
-    console.log(`✅ [salvar-custos] Custos salvos para emissão ${id_emissao}`);
+    // ====== 3. SALVAR tabela custos (desnormalizado por papel) ======
+    if (custos && Array.isArray(custos) && custos.length > 0) {
+      // Filtrar apenas custos globais (não per-série)
+      const custosGlobais = custos.filter((c: any) => !custosPerSerie.includes(c.papel));
+
+      // Montar objeto com valores zerados
+      const custosRecord: Record<string, any> = { id_emissao };
+      
+      // Inicializar todas as colunas com 0
+      Object.values(papelToColumn).forEach(mapping => {
+        if (mapping.upfront) custosRecord[mapping.upfront] = 0;
+        if (mapping.recorrente) custosRecord[mapping.recorrente] = 0;
+        if (mapping.recorrencia) custosRecord[mapping.recorrencia] = 0;
+      });
+
+      // Preencher com valores dos custos
+      custosGlobais.forEach((custo: any) => {
+        const mapping = papelToColumn[custo.papel];
+        if (mapping) {
+          if (mapping.upfront && custo.valor_upfront_bruto) {
+            custosRecord[mapping.upfront] = custo.valor_upfront_bruto;
+          }
+          if (mapping.recorrente && custo.valor_recorrente_bruto) {
+            custosRecord[mapping.recorrente] = custo.valor_recorrente_bruto;
+          }
+          // Para recorrencia, usar periodicidade em meses (12 = anual, 1 = mensal)
+          if (mapping.recorrencia && custo.periodicidade) {
+            custosRecord[mapping.recorrencia] = custo.periodicidade === 'mensal' ? 1 : 12;
+          }
+        }
+      });
+
+      console.log(`📊 [salvar-custos] Custos globais para tabela custos:`, JSON.stringify(custosRecord));
+
+      // Verificar se já existe registro na tabela custos
+      const { data: existingCustosGlobal } = await supabase
+        .from("custos")
+        .select("id")
+        .eq("id_emissao", id_emissao)
+        .single();
+
+      if (existingCustosGlobal) {
+        const { error: updateCustosError } = await supabase
+          .from("custos")
+          .update(custosRecord)
+          .eq("id_emissao", id_emissao);
+
+        if (updateCustosError) {
+          console.error("❌ [salvar-custos] Erro ao atualizar tabela custos:", updateCustosError);
+        } else {
+          console.log(`✅ [salvar-custos] Tabela custos atualizada`);
+        }
+      } else {
+        const { error: insertCustosError } = await supabase
+          .from("custos")
+          .insert(custosRecord);
+
+        if (insertCustosError) {
+          console.error("❌ [salvar-custos] Erro ao inserir na tabela custos:", insertCustosError);
+        } else {
+          console.log(`✅ [salvar-custos] Tabela custos criada`);
+        }
+      }
+    }
+
+    // ====== 4. SALVAR custos_series (Registro B3 e Custódia B3 por série) ======
+    if (custos_series && Array.isArray(custos_series) && custos_series.length > 0) {
+      console.log(`📊 [salvar-custos] Salvando custos por série:`, JSON.stringify(custos_series));
+
+      // Buscar séries da emissão
+      const { data: seriesData } = await supabase
+        .from("series")
+        .select("id, numero, valor_emissao")
+        .eq("id_emissao", id_emissao);
+
+      if (seriesData && seriesData.length > 0) {
+        for (const serieDb of seriesData) {
+          const custoSerie = custos_series.find((cs: any) => cs.numero === serieDb.numero);
+          
+          if (custoSerie) {
+            const valorTotal = (custoSerie.registro_b3 || 0) + (custoSerie.custodia_b3 || 0);
+            
+            // Verificar se já existe
+            const { data: existingCustoSerie } = await supabase
+              .from("custos_series")
+              .select("id")
+              .eq("id_serie", serieDb.id)
+              .eq("papel", "Registro/Custódia B3")
+              .single();
+
+            if (existingCustoSerie) {
+              await supabase
+                .from("custos_series")
+                .update({
+                  registro_b3: custoSerie.registro_b3 || 0,
+                  custodia_b3: custoSerie.custodia_b3 || 0,
+                  valor: valorTotal,
+                })
+                .eq("id", existingCustoSerie.id);
+            } else {
+              await supabase
+                .from("custos_series")
+                .insert({
+                  id_serie: serieDb.id,
+                  papel: "Registro/Custódia B3",
+                  registro_b3: custoSerie.registro_b3 || 0,
+                  custodia_b3: custoSerie.custodia_b3 || 0,
+                  valor: valorTotal,
+                });
+            }
+          }
+        }
+        console.log(`✅ [salvar-custos] Custos por série salvos em custos_series`);
+      }
+    }
+
+    console.log(`✅ [salvar-custos] Todos os custos salvos para emissão ${id_emissao}`);
 
     return new Response(
       JSON.stringify({

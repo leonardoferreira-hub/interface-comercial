@@ -137,13 +137,18 @@ export async function salvarCustos(
     total_mensal: number;
     total_primeiro_ano: number;
     total_anos_subsequentes: number;
-  }
+  },
+  custos_series?: Array<{
+    numero: number;
+    registro_b3: number;
+    custodia_b3: number;
+  }>
 ) {
-  console.log('💰 [salvarCustos] ID:', id_emissao, 'Custos:', custos.length, 'Totais:', totais);
+  console.log('💰 [salvarCustos] ID:', id_emissao, 'Custos:', custos.length, 'Totais:', totais, 'CustosSeries:', custos_series?.length || 0);
 
   try {
     const { data, error } = await supabase.functions.invoke('fluxo-1-salvar-custos', {
-      body: { id_emissao, custos, totais },
+      body: { id_emissao, custos, totais, custos_series },
     });
 
     if (error) {
