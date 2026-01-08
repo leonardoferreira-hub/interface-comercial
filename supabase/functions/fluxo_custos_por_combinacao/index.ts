@@ -342,13 +342,14 @@ serve(async (req) => {
         const custodiaValor = calcularCustodiab3Cr(volume);
         custosVariaveis.push({
           papel: "Custódia B3",
-          preco_upfront: custodiaValor,
-          valor_upfront_calculado: custodiaValor,
-          valor_recorrente_calculado: 0,
+          preco_recorrente: custodiaValor,
+          valor_upfront_calculado: 0,
+          valor_recorrente_calculado: custodiaValor,
           tipo_custo: "variavel",
-          formula: "0.000800% × Volume",
+          periodicidade: "mensal",
+          formula: "0.000800% × Volume (mensal)",
         });
-        totalUpfront += custodiaValor;
+        totalRecorrente += custodiaValor;
 
         // ANBIMA CRI (específico)
         const anbimaValor = calcularAnbimaCri(volume);
@@ -392,13 +393,14 @@ serve(async (req) => {
         const custodiaValor = calcularCustodiab3Cra(volume);
         custosVariaveis.push({
           papel: "Custódia B3",
-          preco_upfront: custodiaValor,
-          valor_upfront_calculado: custodiaValor,
-          valor_recorrente_calculado: 0,
+          preco_recorrente: custodiaValor,
+          valor_upfront_calculado: 0,
+          valor_recorrente_calculado: custodiaValor,
           tipo_custo: "variavel",
-          formula: "0.000300% × Volume",
+          periodicidade: "mensal",
+          formula: "0.000300% × Volume (mensal)",
         });
-        totalUpfront += custodiaValor;
+        totalRecorrente += custodiaValor;
 
         const anbimaValor = calcularAnbimaTodos(volume);
         custosVariaveis.push({
@@ -440,13 +442,14 @@ serve(async (req) => {
           const custodiaValor = calcularCustodiab3Cr(volume);
           custosVariaveis.push({
             papel: "Custódia B3",
-            preco_upfront: custodiaValor,
-            valor_upfront_calculado: custodiaValor,
-            valor_recorrente_calculado: 0,
+            preco_recorrente: custodiaValor,
+            valor_upfront_calculado: 0,
+            valor_recorrente_calculado: custodiaValor,
             tipo_custo: "variavel",
-            formula: "0.000800% × Volume",
+            periodicidade: "mensal",
+            formula: "0.000800% × Volume (mensal)",
           });
-          totalUpfront += custodiaValor;
+          totalRecorrente += custodiaValor;
 
           const registroValor = calcularRegistrob3Cr(series, volume);
           custosVariaveis.push({
@@ -491,13 +494,14 @@ serve(async (req) => {
           const custodiaValor = calcularCustodiab3Deb(volume);
           custosVariaveis.push({
             papel: "Custódia B3",
-            preco_upfront: custodiaValor,
-            valor_upfront_calculado: custodiaValor,
-            valor_recorrente_calculado: 0,
+            preco_recorrente: custodiaValor,
+            valor_upfront_calculado: 0,
+            valor_recorrente_calculado: custodiaValor,
             tipo_custo: "variavel",
-            formula: "Tabela progressiva por faixas",
+            periodicidade: "mensal",
+            formula: "Tabela progressiva por faixas (mensal)",
           });
-          totalUpfront += custodiaValor;
+          totalRecorrente += custodiaValor;
         }
 
         if (isOfertaPublica) {

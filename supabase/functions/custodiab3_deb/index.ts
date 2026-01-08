@@ -94,7 +94,7 @@ serve(async (req) => {
           papel: "Custódia B3",
           valor_total: resultado.valor,
           tipo_custo: "variavel",
-          periodicidade: "upfront",
+          periodicidade: "mensal",
           formula: "Tabela progressiva por faixas de volume",
           detalhes: {
             volume: volume,

@@ -7,6 +7,7 @@ const corsHeaders = {
 
 // Custódia B3 para CRA: 0.000300% do Volume de Emissão
 // Aplicável a: CRA
+// Periodicidade: MENSAL
 const ALIQUOTA = 0.000300 / 100; // 0.000300% = 0.0000030
 
 serve(async (req) => {
@@ -46,8 +47,8 @@ serve(async (req) => {
           papel: "Custódia B3",
           valor_total: valorTotal,
           tipo_custo: "variavel",
-          periodicidade: "upfront",
-          formula: "0.000300% × Volume Emissão",
+          periodicidade: "mensal",
+          formula: "0.000300% × Volume Emissão (mensal)",
           detalhes: {
             aliquota: "0.000300%",
             volume: volume,
