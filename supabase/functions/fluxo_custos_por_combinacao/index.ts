@@ -266,9 +266,17 @@ serve(async (req) => {
         .eq("ativo", true);
 
       if (errorPrincipal) {
-        console.error(`❌ [custos-combinacao] Erro ao buscar custos principais:`, errorPrincipal);
+        console.error(`❌ [custos-combinacao] Erro ao buscar custos principais:`, {
+          code: errorPrincipal.code,
+          message: errorPrincipal.message,
+          details: errorPrincipal.details,
+          hint: errorPrincipal.hint
+        });
       } else {
-        console.log(`✅ [custos-combinacao] ${(custosPrincipais || []).length} custos encontrados na tabela ${tabela}`);
+        console.log(`✅ [custos-combinacao] ${(custosPrincipais || []).length} custos FIXOS encontrados na tabela base_custos.${tabela}`);
+        if (custosPrincipais && custosPrincipais.length > 0) {
+          console.log(`📋 [custos-combinacao] Papéis encontrados:`, custosPrincipais.map((c: any) => c.papel).join(', '));
+        }
         todosCustos = [...(custosPrincipais || [])];
       }
     } else {
@@ -296,9 +304,17 @@ serve(async (req) => {
           .eq("ativo", true);
 
         if (errorVeiculo) {
-          console.error(`❌ [custos-combinacao] Erro ao buscar custos veículo:`, errorVeiculo);
+          console.error(`❌ [custos-combinacao] Erro ao buscar custos veículo:`, {
+            code: errorVeiculo.code,
+            message: errorVeiculo.message,
+            details: errorVeiculo.details,
+            hint: errorVeiculo.hint
+          });
         } else {
-          console.log(`✅ [custos-combinacao] ${(custosVeiculo || []).length} custos encontrados na tabela ${tabelaVeiculo}`);
+          console.log(`✅ [custos-combinacao] ${(custosVeiculo || []).length} custos FIXOS (veículo) encontrados na tabela base_custos.${tabelaVeiculo}`);
+          if (custosVeiculo && custosVeiculo.length > 0) {
+            console.log(`📋 [custos-combinacao] Papéis veículo:`, custosVeiculo.map((c: any) => c.papel).join(', '));
+          }
           todosCustos = [...todosCustos, ...(custosVeiculo || [])];
         }
       }
