@@ -17,8 +17,9 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
+    const body = await req.json().catch(() => ({}));
     const url = new URL(req.url);
-    const id = url.searchParams.get("id");
+    const id = body.id || url.searchParams.get("id");
 
     if (!id) {
       return new Response(
