@@ -133,6 +133,7 @@ serve(async (req) => {
         id_emissao: emissao.id,
         numero: index + 1,
         valor_emissao: serie.valor_emissao || 0,
+        prazo: serie.prazo || null,
         percentual_volume: serie.percentual_volume || 0,
         taxa_juros: serie.taxa_juros || null,
         data_vencimento: serie.data_vencimento || null,
