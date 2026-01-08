@@ -722,6 +722,534 @@ export type Database = {
       }
     }
     Views: {
+      custos_cr_oferta_privada_cetipada: {
+        Row: {
+          ativo: boolean | null
+          created_at: string | null
+          formula_descricao: string | null
+          gross_up: number | null
+          id: string | null
+          id_prestador: string | null
+          papel: string | null
+          periodicidade: string | null
+          preco_recorrente: number | null
+          preco_upfront: number | null
+          tipo_preco: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          created_at?: string | null
+          formula_descricao?: string | null
+          gross_up?: number | null
+          id?: string | null
+          id_prestador?: string | null
+          papel?: string | null
+          periodicidade?: string | null
+          preco_recorrente?: number | null
+          preco_upfront?: number | null
+          tipo_preco?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          created_at?: string | null
+          formula_descricao?: string | null
+          gross_up?: number | null
+          id?: string | null
+          id_prestador?: string | null
+          papel?: string | null
+          periodicidade?: string | null
+          preco_recorrente?: number | null
+          preco_upfront?: number | null
+          tipo_preco?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      custos_cr_oferta_privada_pura: {
+        Row: {
+          ativo: boolean | null
+          created_at: string | null
+          gross_up: number | null
+          id: string | null
+          id_prestador: string | null
+          papel: string | null
+          periodicidade: string | null
+          preco_recorrente: number | null
+          preco_upfront: number | null
+          tipo_preco: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          created_at?: string | null
+          gross_up?: number | null
+          id?: string | null
+          id_prestador?: string | null
+          papel?: string | null
+          periodicidade?: string | null
+          preco_recorrente?: number | null
+          preco_upfront?: number | null
+          tipo_preco?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          created_at?: string | null
+          gross_up?: number | null
+          id?: string | null
+          id_prestador?: string | null
+          papel?: string | null
+          periodicidade?: string | null
+          preco_recorrente?: number | null
+          preco_upfront?: number | null
+          tipo_preco?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      custos_cr_oferta_publica: {
+        Row: {
+          ativo: boolean | null
+          created_at: string | null
+          formula_descricao: string | null
+          gross_up: number | null
+          id: string | null
+          id_prestador: string | null
+          papel: string | null
+          periodicidade: string | null
+          preco_recorrente: number | null
+          preco_upfront: number | null
+          tipo_preco: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          created_at?: string | null
+          formula_descricao?: string | null
+          gross_up?: number | null
+          id?: string | null
+          id_prestador?: string | null
+          papel?: string | null
+          periodicidade?: string | null
+          preco_recorrente?: number | null
+          preco_upfront?: number | null
+          tipo_preco?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          created_at?: string | null
+          formula_descricao?: string | null
+          gross_up?: number | null
+          id?: string | null
+          id_prestador?: string | null
+          papel?: string | null
+          periodicidade?: string | null
+          preco_recorrente?: number | null
+          preco_upfront?: number | null
+          tipo_preco?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      custos_cra_destinacao: {
+        Row: {
+          ativo: boolean | null
+          created_at: string | null
+          formula_descricao: string | null
+          gross_up: number | null
+          id: string | null
+          id_prestador: string | null
+          papel: string | null
+          periodicidade: string | null
+          preco_recorrente: number | null
+          preco_upfront: number | null
+          tipo_preco: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          created_at?: string | null
+          formula_descricao?: string | null
+          gross_up?: number | null
+          id?: string | null
+          id_prestador?: string | null
+          papel?: string | null
+          periodicidade?: string | null
+          preco_recorrente?: number | null
+          preco_upfront?: number | null
+          tipo_preco?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          created_at?: string | null
+          formula_descricao?: string | null
+          gross_up?: number | null
+          id?: string | null
+          id_prestador?: string | null
+          papel?: string | null
+          periodicidade?: string | null
+          preco_recorrente?: number | null
+          preco_upfront?: number | null
+          tipo_preco?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      custos_cra_origem: {
+        Row: {
+          ativo: boolean | null
+          created_at: string | null
+          formula_descricao: string | null
+          gross_up: number | null
+          id: string | null
+          id_prestador: string | null
+          papel: string | null
+          periodicidade: string | null
+          preco_recorrente: number | null
+          preco_upfront: number | null
+          tipo_preco: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          created_at?: string | null
+          formula_descricao?: string | null
+          gross_up?: number | null
+          id?: string | null
+          id_prestador?: string | null
+          papel?: string | null
+          periodicidade?: string | null
+          preco_recorrente?: number | null
+          preco_upfront?: number | null
+          tipo_preco?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          created_at?: string | null
+          formula_descricao?: string | null
+          gross_up?: number | null
+          id?: string | null
+          id_prestador?: string | null
+          papel?: string | null
+          periodicidade?: string | null
+          preco_recorrente?: number | null
+          preco_upfront?: number | null
+          tipo_preco?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      custos_cri_destinacao: {
+        Row: {
+          ativo: boolean | null
+          created_at: string | null
+          formula_descricao: string | null
+          gross_up: number | null
+          id: string | null
+          id_prestador: string | null
+          papel: string | null
+          periodicidade: string | null
+          preco_recorrente: number | null
+          preco_upfront: number | null
+          tipo_preco: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          created_at?: string | null
+          formula_descricao?: string | null
+          gross_up?: number | null
+          id?: string | null
+          id_prestador?: string | null
+          papel?: string | null
+          periodicidade?: string | null
+          preco_recorrente?: number | null
+          preco_upfront?: number | null
+          tipo_preco?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          created_at?: string | null
+          formula_descricao?: string | null
+          gross_up?: number | null
+          id?: string | null
+          id_prestador?: string | null
+          papel?: string | null
+          periodicidade?: string | null
+          preco_recorrente?: number | null
+          preco_upfront?: number | null
+          tipo_preco?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      custos_cri_origem: {
+        Row: {
+          ativo: boolean | null
+          created_at: string | null
+          formula_descricao: string | null
+          gross_up: number | null
+          id: string | null
+          id_prestador: string | null
+          papel: string | null
+          periodicidade: string | null
+          preco_recorrente: number | null
+          preco_upfront: number | null
+          tipo_preco: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          created_at?: string | null
+          formula_descricao?: string | null
+          gross_up?: number | null
+          id?: string | null
+          id_prestador?: string | null
+          papel?: string | null
+          periodicidade?: string | null
+          preco_recorrente?: number | null
+          preco_upfront?: number | null
+          tipo_preco?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          created_at?: string | null
+          formula_descricao?: string | null
+          gross_up?: number | null
+          id?: string | null
+          id_prestador?: string | null
+          papel?: string | null
+          periodicidade?: string | null
+          preco_recorrente?: number | null
+          preco_upfront?: number | null
+          tipo_preco?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      custos_deb_oferta_privada_cetipada: {
+        Row: {
+          ativo: boolean | null
+          created_at: string | null
+          formula_descricao: string | null
+          gross_up: number | null
+          id: string | null
+          id_prestador: string | null
+          papel: string | null
+          periodicidade: string | null
+          preco_recorrente: number | null
+          preco_upfront: number | null
+          tipo_preco: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          created_at?: string | null
+          formula_descricao?: string | null
+          gross_up?: number | null
+          id?: string | null
+          id_prestador?: string | null
+          papel?: string | null
+          periodicidade?: string | null
+          preco_recorrente?: number | null
+          preco_upfront?: number | null
+          tipo_preco?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          created_at?: string | null
+          formula_descricao?: string | null
+          gross_up?: number | null
+          id?: string | null
+          id_prestador?: string | null
+          papel?: string | null
+          periodicidade?: string | null
+          preco_recorrente?: number | null
+          preco_upfront?: number | null
+          tipo_preco?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      custos_deb_oferta_privada_pura: {
+        Row: {
+          ativo: boolean | null
+          created_at: string | null
+          gross_up: number | null
+          id: string | null
+          id_prestador: string | null
+          papel: string | null
+          periodicidade: string | null
+          preco_recorrente: number | null
+          preco_upfront: number | null
+          tipo_preco: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          created_at?: string | null
+          gross_up?: number | null
+          id?: string | null
+          id_prestador?: string | null
+          papel?: string | null
+          periodicidade?: string | null
+          preco_recorrente?: number | null
+          preco_upfront?: number | null
+          tipo_preco?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          created_at?: string | null
+          gross_up?: number | null
+          id?: string | null
+          id_prestador?: string | null
+          papel?: string | null
+          periodicidade?: string | null
+          preco_recorrente?: number | null
+          preco_upfront?: number | null
+          tipo_preco?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      custos_deb_oferta_publica: {
+        Row: {
+          ativo: boolean | null
+          created_at: string | null
+          formula_descricao: string | null
+          gross_up: number | null
+          id: string | null
+          id_prestador: string | null
+          papel: string | null
+          periodicidade: string | null
+          preco_recorrente: number | null
+          preco_upfront: number | null
+          tipo_preco: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          created_at?: string | null
+          formula_descricao?: string | null
+          gross_up?: number | null
+          id?: string | null
+          id_prestador?: string | null
+          papel?: string | null
+          periodicidade?: string | null
+          preco_recorrente?: number | null
+          preco_upfront?: number | null
+          tipo_preco?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          created_at?: string | null
+          formula_descricao?: string | null
+          gross_up?: number | null
+          id?: string | null
+          id_prestador?: string | null
+          papel?: string | null
+          periodicidade?: string | null
+          preco_recorrente?: number | null
+          preco_upfront?: number | null
+          tipo_preco?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      custos_patrimonio_separado: {
+        Row: {
+          ativo: boolean | null
+          created_at: string | null
+          gross_up: number | null
+          id: string | null
+          id_prestador: string | null
+          papel: string | null
+          periodicidade: string | null
+          preco_recorrente: number | null
+          preco_upfront: number | null
+          tipo_preco: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          created_at?: string | null
+          gross_up?: number | null
+          id?: string | null
+          id_prestador?: string | null
+          papel?: string | null
+          periodicidade?: string | null
+          preco_recorrente?: number | null
+          preco_upfront?: number | null
+          tipo_preco?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          created_at?: string | null
+          gross_up?: number | null
+          id?: string | null
+          id_prestador?: string | null
+          papel?: string | null
+          periodicidade?: string | null
+          preco_recorrente?: number | null
+          preco_upfront?: number | null
+          tipo_preco?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      custos_veiculo_exclusivo: {
+        Row: {
+          ativo: boolean | null
+          created_at: string | null
+          gross_up: number | null
+          id: string | null
+          id_prestador: string | null
+          papel: string | null
+          periodicidade: string | null
+          preco_recorrente: number | null
+          preco_upfront: number | null
+          tipo_preco: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          created_at?: string | null
+          gross_up?: number | null
+          id?: string | null
+          id_prestador?: string | null
+          papel?: string | null
+          periodicidade?: string | null
+          preco_recorrente?: number | null
+          preco_upfront?: number | null
+          tipo_preco?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          created_at?: string | null
+          gross_up?: number | null
+          id?: string | null
+          id_prestador?: string | null
+          papel?: string | null
+          periodicidade?: string | null
+          preco_recorrente?: number | null
+          preco_upfront?: number | null
+          tipo_preco?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       v_custos_totalizados: {
         Row: {
           id_emissao: string | null
