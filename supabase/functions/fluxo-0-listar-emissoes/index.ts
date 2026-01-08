@@ -30,13 +30,7 @@ serve(async (req) => {
 
     let query = supabase
       .from("emissoes")
-      .select(`
-        *,
-        categorias:categoria(id, codigo, nome),
-        veiculos:veiculo(id, codigo, nome),
-        tipos_oferta:tipo_oferta(id, codigo, nome),
-        lastros:lastro(id, codigo, nome)
-      `, { count: "exact" })
+      .select("*", { count: "exact" })
       .order("criado_em", { ascending: false })
       .range(offset, offset + limit - 1);
 
@@ -67,7 +61,6 @@ serve(async (req) => {
       ...emissao,
       status_proposta: emissao.status || 'rascunho',
       data_criacao: emissao.criado_em,
-      categoria: emissao.categorias?.codigo || emissao.categoria,
     }));
 
     const totalPages = Math.ceil((count || 0) / limit);
