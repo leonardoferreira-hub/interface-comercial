@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Save, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -7,7 +7,7 @@ import { NavigationTabs } from '@/components/NavigationTabs';
 import { StepIndicator } from '@/components/calculator/StepIndicator';
 import { Step1BasicData, type EmissaoData } from '@/components/calculator/Step1BasicData';
 import { Step2CostsProviders, type CostsData, type CostItem } from '@/components/calculator/Step2CostsProviders';
-import { criarEmissao, salvarCustos, fetchCustosPorCombinacao } from '@/lib/supabase';
+import { criarEmissao, atualizarEmissao, salvarCustos, fetchCustosPorCombinacao, detalhesEmissao } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 
 // Função para transformar custos da API para o formato do Step2
@@ -85,6 +85,51 @@ const emptyCostsData: CostsData = {
   mensal: [],
 };
 
+// Transform costs from DB format to Step2 format
+function transformCustosFromDB(custosLinhas: any[]): CostsData {
+  const upfront: CostItem[] = [];
+  const anual: CostItem[] = [];
+  const mensal: CostItem[] = [];
+
+  custosLinhas.forEach((linha: any, index: number) => {
+    const grossUpPercent = linha.gross_up ? (linha.gross_up <= 1 ? linha.gross_up * 100 : linha.gross_up) : 0;
+
+    if (linha.preco_upfront > 0) {
+      upfront.push({
+        id: linha.id || `db-${index}`,
+        prestador: linha.papel || 'Não especificado',
+        valor: linha.preco_upfront,
+        grossUp: grossUpPercent,
+        valorBruto: linha.valor_upfront_bruto || linha.preco_upfront,
+        tipo: linha.tipo_preco === 'percentual' ? 'calculado' : 'auto',
+        id_prestador: linha.id_prestador || null,
+        papel: linha.papel,
+      });
+    }
+
+    if (linha.preco_recorrente > 0) {
+      const item: CostItem = {
+        id: `${linha.id || `db-${index}`}-rec`,
+        prestador: linha.papel || 'Não especificado',
+        valor: linha.preco_recorrente,
+        grossUp: grossUpPercent,
+        valorBruto: linha.valor_recorrente_bruto || linha.preco_recorrente,
+        tipo: linha.tipo_preco === 'percentual' ? 'calculado' : 'auto',
+        id_prestador: linha.id_prestador || null,
+        papel: linha.papel,
+      };
+
+      if (linha.periodicidade === 'mensal') {
+        mensal.push(item);
+      } else {
+        anual.push(item);
+      }
+    }
+  });
+
+  return { upfront, anual, mensal };
+}
+
 export default function Calculator() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -94,6 +139,7 @@ export default function Calculator() {
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [isFetchingCosts, setIsFetchingCosts] = useState(false);
+  const [isLoadingEdit, setIsLoadingEdit] = useState(false);
 
   const [basicData, setBasicData] = useState<EmissaoData>({
     demandante_proposta: '',
@@ -107,6 +153,60 @@ export default function Calculator() {
   });
 
   const [costsData, setCostsData] = useState<CostsData>(emptyCostsData);
+
+  // Load emission data when editing
+  useEffect(() => {
+    if (editId) {
+      loadEmissaoForEdit(editId);
+    }
+  }, [editId]);
+
+  const loadEmissaoForEdit = async (id: string) => {
+    setIsLoadingEdit(true);
+    try {
+      console.log('📝 [Calculator] Carregando emissão para edição:', id);
+      const result = await detalhesEmissao(id);
+      
+      if (result?.data) {
+        const data = result.data;
+        console.log('📝 [Calculator] Dados carregados:', data);
+        
+        // Populate basic data
+        setBasicData({
+          demandante_proposta: data.demandante_proposta || '',
+          empresa_destinataria: data.empresa_destinataria || '',
+          categoria: data.categorias?.codigo || data.categoria || '',
+          oferta: data.tipos_oferta?.codigo || data.oferta || '',
+          veiculo: data.veiculos?.codigo || data.veiculo || '',
+          lastro: data.lastros?.codigo || data.lastro || '',
+          quantidade_series: String(data.series?.length || 1),
+          series: data.series?.length > 0 
+            ? data.series.map((s: any) => ({
+                numero: s.numero,
+                valor_emissao: s.valor_emissao,
+                prazo: s.prazo,
+              }))
+            : [{ numero: 1, valor_emissao: data.volume || 0 }],
+        });
+        
+        // Populate costs if available
+        if (data.custos?.custos_linhas && data.custos.custos_linhas.length > 0) {
+          const transformedCosts = transformCustosFromDB(data.custos.custos_linhas);
+          console.log('📝 [Calculator] Custos transformados:', transformedCosts);
+          setCostsData(transformedCosts);
+        }
+      }
+    } catch (error) {
+      console.error('💥 [Calculator] Erro ao carregar emissão:', error);
+      toast({
+        title: 'Erro ao carregar',
+        description: 'Não foi possível carregar os dados da emissão.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoadingEdit(false);
+    }
+  };
 
   const validateStep1 = (): string[] => {
     const errors: string[] = [];
@@ -217,17 +317,30 @@ export default function Calculator() {
         }))
       };
 
-      console.log('🧾 [Calculator] payload criarEmissao:', emissaoPayload);
+      let emissaoId: string;
 
-      const result = await criarEmissao(emissaoPayload);
-      console.log('🧾 [Calculator] resposta criarEmissao:', result);
+      // Check if we're editing or creating
+      if (editId) {
+        console.log('🧾 [Calculator] payload atualizarEmissao:', emissaoPayload);
+        const result = await atualizarEmissao(editId, emissaoPayload);
+        console.log('🧾 [Calculator] resposta atualizarEmissao:', result);
 
-      if (result?.error) {
-        throw new Error(result.error);
+        if (result?.error) {
+          throw new Error(result.error);
+        }
+        emissaoId = editId;
+      } else {
+        console.log('🧾 [Calculator] payload criarEmissao:', emissaoPayload);
+        const result = await criarEmissao(emissaoPayload);
+        console.log('🧾 [Calculator] resposta criarEmissao:', result);
+
+        if (result?.error) {
+          throw new Error(result.error);
+        }
+        emissaoId = result?.data?.id;
       }
 
       // Save costs from all sections with correct mapping
-      // gross_up salvo como decimal (0.1215), valor líquido em preco_*, bruto em valor_*_bruto
       const allCosts = [
         ...costsData.upfront.map((c) => ({
           papel: c.papel || c.prestador,
@@ -264,8 +377,6 @@ export default function Calculator() {
         })),
       ].filter((c) => c.preco_upfront > 0 || c.preco_recorrente > 0);
 
-      console.log('🧾 [Calculator] custos para salvar:', { count: allCosts.length, allCosts });
-
       // Calcular totais para salvar
       const totalUpfront = costsData.upfront.reduce((sum, item) => sum + item.valorBruto, 0);
       const totalAnual = costsData.anual.reduce((sum, item) => sum + item.valorBruto, 0);
@@ -281,26 +392,15 @@ export default function Calculator() {
         total_anos_subsequentes: custoAnosSubsequentes,
       };
 
-      console.log('🧾 [Calculator] totais calculados:', totais);
-
-      // Extrair custos por série (Registro B3 e Custódia B3)
+      // Extrair custos por série
       const custosSeries: Array<{ numero: number; registro_b3: number; custodia_b3: number }> = [];
-      
-      // Buscar detalhes por série dos custos variáveis (usando 'prestador' ou 'papel')
       const custoRegistroB3 = costsData.upfront.find(c => c.prestador === 'Registro B3' || c.papel === 'Registro B3');
       const custoCustodiaB3 = costsData.upfront.find(c => c.prestador === 'Custódia B3' || c.papel === 'Custódia B3');
-      
-      // Calcular volume total das séries
       const volumeTotal = basicData.series.reduce((sum, s) => sum + (s.valor_emissao || 0), 0);
       
-      // Se temos dados de séries no basicData, criar entradas para cada série
       if (basicData.series && basicData.series.length > 0) {
         basicData.series.forEach((serie) => {
-          const serieVolume = serie.valor_emissao || 0;
-          
-          // Calcular proporcionalmente os custos por série
-          const proporcao = volumeTotal > 0 ? serieVolume / volumeTotal : 0;
-          
+          const proporcao = volumeTotal > 0 ? (serie.valor_emissao || 0) / volumeTotal : 0;
           custosSeries.push({
             numero: serie.numero,
             registro_b3: custoRegistroB3 ? custoRegistroB3.valorBruto * proporcao : 0,
@@ -309,11 +409,8 @@ export default function Calculator() {
         });
       }
 
-      console.log('🧾 [Calculator] custos por série:', custosSeries);
-
-      if (result?.data?.id) {
-        const salvarResult = await salvarCustos(result.data.id, allCosts, totais, custosSeries);
-        console.log('🧾 [Calculator] resposta salvarCustos:', salvarResult);
+      if (emissaoId) {
+        const salvarResult = await salvarCustos(emissaoId, allCosts, totais, custosSeries);
         if (salvarResult?.error) {
           throw new Error(salvarResult.error);
         }
@@ -321,7 +418,7 @@ export default function Calculator() {
 
       toast({
         title: 'Cotação salva!',
-        description: `Emissão criada com sucesso.`,
+        description: editId ? 'Emissão atualizada com sucesso.' : 'Emissão criada com sucesso.',
       });
 
       navigate('/');

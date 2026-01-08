@@ -62,14 +62,22 @@ serve(async (req) => {
       );
     }
 
+    // Map fields to match frontend expectations
+    const mappedData = data?.map((emissao: any) => ({
+      ...emissao,
+      status_proposta: emissao.status || 'rascunho',
+      data_criacao: emissao.criado_em,
+      categoria: emissao.categorias?.codigo || emissao.categoria,
+    }));
+
     const totalPages = Math.ceil((count || 0) / limit);
 
-    console.log(`✅ [listar-emissoes] ${data?.length || 0} emissões encontradas, total: ${count}`);
+    console.log(`✅ [listar-emissoes] ${mappedData?.length || 0} emissões encontradas, total: ${count}`);
 
     return new Response(
       JSON.stringify({
         success: true,
-        data,
+        data: mappedData,
         pagination: {
           page,
           limit,
