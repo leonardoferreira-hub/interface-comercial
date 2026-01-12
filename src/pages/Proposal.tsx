@@ -222,6 +222,10 @@ export default function Proposal() {
                   <p className="font-semibold">{emissao.demandante_proposta || '-'}</p>
                 </div>
                 <div>
+                  <p className="text-sm text-muted-foreground">Empresa Destinatária</p>
+                  <p className="font-semibold">{emissao.empresa_destinataria || '-'}</p>
+                </div>
+                <div>
                   <p className="text-sm text-muted-foreground">Categoria</p>
                   <p className="font-semibold">{emissao.categoria_info?.codigo || '-'}</p>
                 </div>
@@ -276,12 +280,6 @@ export default function Proposal() {
                 </div>
               )}
 
-              {emissao.empresa_destinataria && (
-                <div className="mt-4">
-                  <p className="text-sm text-muted-foreground">Empresa Destinatária</p>
-                  <p className="font-semibold">{emissao.empresa_destinataria}</p>
-                </div>
-              )}
               {emissao.observacao && (
                 <div className="mt-4">
                   <p className="text-sm text-muted-foreground">Observações</p>

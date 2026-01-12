@@ -29,9 +29,10 @@ serve(async (req) => {
 
     console.log(`📝 [atualizar-emissao] ID: ${id}, dados:`, JSON.stringify(updateData));
 
-    // Resolver referências se necessário
+    // Resolver referências se necessário (tabelas no schema base_custos)
     if (updateData.categoria && typeof updateData.categoria === "string") {
       const { data: cat } = await supabase
+        .schema("base_custos")
         .from("categorias")
         .select("id")
         .eq("codigo", updateData.categoria)
@@ -41,6 +42,7 @@ serve(async (req) => {
 
     if (updateData.veiculo && typeof updateData.veiculo === "string") {
       const { data: veic } = await supabase
+        .schema("base_custos")
         .from("veiculos")
         .select("id")
         .eq("nome", updateData.veiculo)
@@ -50,6 +52,7 @@ serve(async (req) => {
 
     if (updateData.oferta && typeof updateData.oferta === "string") {
       const { data: of } = await supabase
+        .schema("base_custos")
         .from("tipos_oferta")
         .select("id")
         .eq("nome", updateData.oferta)
@@ -59,6 +62,7 @@ serve(async (req) => {
 
     if (updateData.lastro && typeof updateData.lastro === "string") {
       const { data: las } = await supabase
+        .schema("base_custos")
         .from("lastros")
         .select("id")
         .eq("nome", updateData.lastro)
