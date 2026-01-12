@@ -171,14 +171,26 @@ export async function salvarCustos(
 }
 
 // FLUXO 2
-export async function gerarPDF(id: string) {
+export async function gerarPDF(
+  id: string,
+  dadosEmpresa?: {
+    cnpj: string;
+    razao_social: string;
+    endereco: string;
+    nome: string;
+    email: string;
+  }
+) {
   console.log('📄 [gerarPDF] Gerando para ID:', id);
 
   try {
-    const { data, error } = await supabase.functions.invoke(
-      `fluxo-2-gerar-pdf?id=${encodeURIComponent(id)}`,
-      { method: 'GET' }
-    );
+    const { data, error } = await supabase.functions.invoke('gerar_proposta_pdf', {
+      method: 'POST',
+      body: {
+        emissao_id: id,
+        ...dadosEmpresa,
+      },
+    });
 
     if (error) {
       console.error('💥 [gerarPDF] Erro:', error);
@@ -200,7 +212,7 @@ export async function buscarCnpj(cnpj: string) {
 
   try {
     const { data, error } = await supabase.functions.invoke(
-      `buscar-cnpj?cnpj=${encodeURIComponent(cnpj)}`,
+      `buscar_cnpj?cnpj=${encodeURIComponent(cnpj)}`,
       { method: 'GET' }
     );
 

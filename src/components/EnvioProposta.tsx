@@ -179,7 +179,13 @@ export function EnvioProposta({ emissaoId, dadosIniciais, onSuccess, onCancel }:
       }
 
       // Then generate the PDF
-      const pdfResult = await gerarPDF(emissaoId);
+      const pdfResult = await gerarPDF(emissaoId, {
+        cnpj,
+        razao_social: razaoSocial,
+        endereco,
+        nome,
+        email,
+      });
 
       if (pdfResult.success && pdfResult.data?.html) {
         toast({
