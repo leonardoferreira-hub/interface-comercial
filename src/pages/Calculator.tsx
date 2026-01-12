@@ -226,6 +226,15 @@ export default function Calculator() {
     const volumeTotal = basicData.series.reduce((sum, s) => sum + (s.valor_emissao || 0), 0);
     if (volumeTotal <= 0) errors.push('Valor das Séries (deve ser maior que zero)');
 
+    // Validar prazo obrigatório para Privada Cetipada e CVM 160
+    const requiresPrazo = ['Oferta Privada Cetipada', 'Oferta CVM 160'].includes(basicData.oferta);
+    if (requiresPrazo) {
+      const seriesSemPrazo = basicData.series.filter(s => !s.prazo || s.prazo <= 0);
+      if (seriesSemPrazo.length > 0) {
+        errors.push('Prazo (anos) para todas as séries');
+      }
+    }
+
     return errors;
   };
 

@@ -37,7 +37,9 @@ export function Step1BasicData({ data, onChange }: Step1Props) {
   // Lógica condicional: CRI/CRA usam Lastro, DEB/CR usam Oferta/Veículo
   const showLastro = ['CRI', 'CRA'].includes(data.categoria);
   const showOfertaVeiculo = ['DEB', 'CR', 'NC'].includes(data.categoria);
-  const isDebenture = data.categoria === 'DEB';
+  
+  // Prazo obrigatório para Privada Cetipada e CVM 160
+  const requiresPrazo = ['Oferta Privada Cetipada', 'Oferta CVM 160'].includes(data.oferta);
 
   // Limpar campos quando categoria muda
   useEffect(() => {
@@ -235,8 +237,8 @@ export function Step1BasicData({ data, onChange }: Step1Props) {
                   <TableRow className="bg-muted/50">
                     <TableHead className="w-24">Série</TableHead>
                     <TableHead>Valor de Emissão (R$)</TableHead>
-                    {isDebenture && (
-                      <TableHead className="w-40">Prazo (anos)</TableHead>
+                    {requiresPrazo && (
+                      <TableHead className="w-40">Prazo (anos) *</TableHead>
                     )}
                   </TableRow>
                 </TableHeader>
@@ -251,7 +253,7 @@ export function Step1BasicData({ data, onChange }: Step1Props) {
                           className="max-w-xs"
                         />
                       </TableCell>
-                      {isDebenture && (
+                      {requiresPrazo && (
                         <TableCell>
                           <Input
                             type="number"
@@ -261,6 +263,7 @@ export function Step1BasicData({ data, onChange }: Step1Props) {
                             value={serie.prazo || ''}
                             onChange={(e) => handleSeriePrazoChange(serie.numero, parseInt(e.target.value) || 0)}
                             className="w-24"
+                            required
                           />
                         </TableCell>
                       )}
