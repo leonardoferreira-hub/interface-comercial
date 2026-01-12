@@ -43,6 +43,7 @@ serve(async (req) => {
 
     if (categoria) {
       const { data: cat } = await supabase
+        .schema("base_custos")
         .from("categorias")
         .select("id")
         .eq("codigo", categoria)
@@ -53,6 +54,7 @@ serve(async (req) => {
 
     if (veiculo) {
       const { data: veic } = await supabase
+        .schema("base_custos")
         .from("veiculos")
         .select("id")
         .eq("nome", veiculo)
@@ -63,6 +65,7 @@ serve(async (req) => {
 
     if (oferta) {
       const { data: of } = await supabase
+        .schema("base_custos")
         .from("tipos_oferta")
         .select("id")
         .eq("nome", oferta)
@@ -73,6 +76,7 @@ serve(async (req) => {
 
     if (lastro) {
       const { data: las } = await supabase
+        .schema("base_custos")
         .from("lastros")
         .select("id")
         .eq("nome", lastro)
