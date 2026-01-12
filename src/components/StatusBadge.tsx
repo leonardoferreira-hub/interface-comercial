@@ -7,10 +7,7 @@ const statusLabels: Record<string, string> = {
   enviada: 'Enviada',
   aceita: 'Aceita',
   rejeitada: 'Rejeitada',
-  estruturando: 'Estruturando',
-  estruturada: 'Estruturada',
-  liquidada: 'Liquidada',
-  arquivada: 'Arquivada',
+  em_estruturacao: 'Em Estruturação',
 };
 
 export function StatusBadge({ status }: StatusBadgeProps) {
