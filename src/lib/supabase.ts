@@ -175,18 +175,78 @@ export async function gerarPDF(id: string) {
   console.log('📄 [gerarPDF] Gerando para ID:', id);
 
   try {
-    const { data, error } = await supabase.functions.invoke(`fluxo-2-gerar-pdf/${id}`);
+    const { data, error } = await supabase.functions.invoke(
+      `fluxo-2-gerar-pdf?id=${encodeURIComponent(id)}`,
+      { method: 'GET' }
+    );
 
     if (error) {
       console.error('💥 [gerarPDF] Erro:', error);
-      throw error;
+      return { success: false, error: error.message };
     }
 
     console.log('✅ [gerarPDF] Sucesso');
     return data;
   } catch (error) {
     console.error('💥 [gerarPDF] Erro:', error);
-    throw error;
+    const message = error instanceof Error ? error.message : 'Erro desconhecido';
+    return { success: false, error: message };
+  }
+}
+
+// Buscar dados do CNPJ
+export async function buscarCnpj(cnpj: string) {
+  console.log('🔍 [buscarCnpj] Buscando:', cnpj);
+
+  try {
+    const { data, error } = await supabase.functions.invoke(
+      `buscar-cnpj?cnpj=${encodeURIComponent(cnpj)}`,
+      { method: 'GET' }
+    );
+
+    if (error) {
+      console.error('💥 [buscarCnpj] Erro:', error);
+      return { success: false, error: error.message };
+    }
+
+    console.log('✅ [buscarCnpj] Sucesso:', data);
+    return data;
+  } catch (error) {
+    console.error('💥 [buscarCnpj] Erro:', error);
+    const message = error instanceof Error ? error.message : 'Erro desconhecido';
+    return { success: false, error: message };
+  }
+}
+
+// Atualizar dados da empresa na emissão
+export async function atualizarDadosEmpresa(
+  id: string,
+  dados: {
+    empresa_cnpj: string;
+    empresa_razao_social: string;
+    empresa_endereco: string;
+    contato_nome: string;
+    contato_email: string;
+  }
+) {
+  console.log('🏢 [atualizarDadosEmpresa] ID:', id, 'Dados:', dados);
+
+  try {
+    const { data, error } = await supabase.functions.invoke('fluxo-1-atualizar-emissao', {
+      body: { id, ...dados },
+    });
+
+    if (error) {
+      console.error('💥 [atualizarDadosEmpresa] Erro:', error);
+      return { success: false, error: error.message };
+    }
+
+    console.log('✅ [atualizarDadosEmpresa] Sucesso:', data);
+    return data;
+  } catch (error) {
+    console.error('💥 [atualizarDadosEmpresa] Erro:', error);
+    const message = error instanceof Error ? error.message : 'Erro desconhecido';
+    return { success: false, error: message };
   }
 }
 

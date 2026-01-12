@@ -4,9 +4,11 @@ import { ArrowLeft, FileDown, Send, Printer, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Header } from '@/components/Header';
 import { NavigationTabs } from '@/components/NavigationTabs';
 import { StatusBadge } from '@/components/StatusBadge';
+import { EnvioProposta } from '@/components/EnvioProposta';
 import { detalhesEmissao, finalizarProposta } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 
@@ -19,6 +21,7 @@ export default function Proposal() {
   const [emissao, setEmissao] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
+  const [showEnvioDialog, setShowEnvioDialog] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -69,12 +72,13 @@ export default function Proposal() {
     window.print();
   };
 
-  const handleExportPDF = () => {
+  const handlePropostaGerada = () => {
+    setShowEnvioDialog(false);
+    loadEmissao();
     toast({
-      title: 'Exportando PDF...',
-      description: 'O download será iniciado em breve.',
+      title: 'Proposta gerada com sucesso!',
+      description: 'A proposta foi aberta em uma nova aba.',
     });
-    // TODO: Implement PDF export
   };
 
   const formatCurrency = (value: number) => {
@@ -198,14 +202,31 @@ export default function Proposal() {
               <Printer className="h-4 w-4 mr-2" />
               Imprimir
             </Button>
-            <Button variant="outline" onClick={handleExportPDF}>
-              <FileDown className="h-4 w-4 mr-2" />
-              Exportar PDF
-            </Button>
-            <Button onClick={handleSendProposal} disabled={isSending || emissao.status_proposta === 'enviada'}>
-              <Send className="h-4 w-4 mr-2" />
-              {isSending ? 'Enviando...' : 'Enviar Proposta'}
-            </Button>
+            <Dialog open={showEnvioDialog} onOpenChange={setShowEnvioDialog}>
+              <DialogTrigger asChild>
+                <Button disabled={emissao.status === 'enviada'}>
+                  <Send className="h-4 w-4 mr-2" />
+                  Enviar Proposta
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Preencher dados para envio</DialogTitle>
+                </DialogHeader>
+                <EnvioProposta
+                  emissaoId={id!}
+                  dadosIniciais={{
+                    empresa_cnpj: emissao.empresa_cnpj,
+                    empresa_razao_social: emissao.empresa_razao_social,
+                    empresa_endereco: emissao.empresa_endereco,
+                    contato_nome: emissao.contato_nome,
+                    contato_email: emissao.contato_email,
+                  }}
+                  onSuccess={handlePropostaGerada}
+                  onCancel={() => setShowEnvioDialog(false)}
+                />
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
 

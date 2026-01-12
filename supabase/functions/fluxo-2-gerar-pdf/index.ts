@@ -180,11 +180,27 @@ serve(async (req) => {
           <div class="field-value">${emissao.empresa_cnpj || '-'}</div>
         </div>
         <div class="field">
-          <div class="field-label">Destinatária</div>
-          <div class="field-value">${emissao.empresa_destinataria || '-'}</div>
+          <div class="field-label">Endereço</div>
+          <div class="field-value">${emissao.empresa_endereco || '-'}</div>
         </div>
       </div>
     </div>
+
+    ${emissao.contato_nome || emissao.contato_email ? `
+    <div class="section">
+      <div class="section-title">Dados do Contato</div>
+      <div class="grid">
+        <div class="field">
+          <div class="field-label">Nome</div>
+          <div class="field-value">${emissao.contato_nome || '-'}</div>
+        </div>
+        <div class="field">
+          <div class="field-label">E-mail</div>
+          <div class="field-value">${emissao.contato_email || '-'}</div>
+        </div>
+      </div>
+    </div>
+    ` : ''}
 
     ${series && series.length > 0 ? `
     <div class="section">
