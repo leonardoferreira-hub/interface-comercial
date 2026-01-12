@@ -72,7 +72,7 @@ export default function Index() {
   const total = emissoes.length;
   const aceitas = emissoes.filter((e) => e.status_proposta === 'aceita').length;
   const estruturando = emissoes.filter(
-    (e) => e.status_proposta === 'estruturando' || e.status_proposta === 'estruturada'
+    (e) => e.status_proposta === 'em_estruturacao'
   ).length;
   const volumeTotal = emissoes.reduce((sum, e) => sum + e.volume, 0);
 
@@ -83,8 +83,16 @@ export default function Index() {
     color: '',
   })).filter((d) => d.value > 0);
 
-  const statusVolumeData = ['aceita', 'estruturando', 'enviada', 'rascunho'].map((status) => ({
-    name: status.charAt(0).toUpperCase() + status.slice(1),
+  const statusLabels: Record<string, string> = {
+    aceita: 'Aceita',
+    em_estruturacao: 'Em Estruturação',
+    enviada: 'Enviada',
+    rascunho: 'Rascunho',
+    rejeitada: 'Rejeitada',
+  };
+
+  const statusVolumeData = ['aceita', 'em_estruturacao', 'enviada', 'rascunho'].map((status) => ({
+    name: statusLabels[status] || status,
     value: emissoes.filter((e) => e.status_proposta === status).reduce((sum, e) => sum + e.volume, 0),
     color: '',
   })).filter((d) => d.value > 0);
@@ -156,10 +164,7 @@ export default function Index() {
                   <SelectItem value="enviada">Enviada</SelectItem>
                   <SelectItem value="aceita">Aceita</SelectItem>
                   <SelectItem value="rejeitada">Rejeitada</SelectItem>
-                  <SelectItem value="estruturando">Estruturando</SelectItem>
-                  <SelectItem value="estruturada">Estruturada</SelectItem>
-                  <SelectItem value="liquidada">Liquidada</SelectItem>
-                  <SelectItem value="arquivada">Arquivada</SelectItem>
+                  <SelectItem value="em_estruturacao">Em Estruturação</SelectItem>
                 </SelectContent>
               </Select>
 

@@ -103,3 +103,34 @@ All colors MUST be HSL.
     @apply bg-background text-foreground;
   }
 }
+
+/* Status Badges */
+@layer components {
+  .status-badge {
+    @apply px-2.5 py-1 rounded-full text-xs font-semibold inline-flex items-center;
+  }
+
+  .status-rascunho {
+    @apply bg-muted text-muted-foreground;
+  }
+
+  .status-enviada {
+    background-color: hsl(217 91% 95%);
+    color: hsl(217 91% 45%);
+  }
+
+  .status-aceita {
+    background-color: hsl(142 76% 95%);
+    color: hsl(142 76% 36%);
+  }
+
+  .status-rejeitada {
+    background-color: hsl(0 84% 95%);
+    color: hsl(0 84% 50%);
+  }
+
+  .status-em_estruturacao {
+    background-color: hsl(38 92% 95%);
+    color: hsl(38 92% 40%);
+  }
+}

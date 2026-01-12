@@ -1,15 +1,16 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, FileDown, Send, Printer, FileText } from 'lucide-react';
+import { ArrowLeft, Printer, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Header } from '@/components/Header';
 import { NavigationTabs } from '@/components/NavigationTabs';
 import { StatusBadge } from '@/components/StatusBadge';
+import { StatusActions } from '@/components/StatusActions';
 import { EnvioProposta } from '@/components/EnvioProposta';
-import { detalhesEmissao, finalizarProposta } from '@/lib/supabase';
+import { detalhesEmissao } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 
 export default function Proposal() {
@@ -20,7 +21,6 @@ export default function Proposal() {
 
   const [emissao, setEmissao] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSending, setIsSending] = useState(false);
   const [showEnvioDialog, setShowEnvioDialog] = useState(false);
 
   useEffect(() => {
@@ -45,26 +45,6 @@ export default function Proposal() {
       });
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const handleSendProposal = async () => {
-    setIsSending(true);
-    try {
-      await finalizarProposta(id!, 'enviada', new Date().toISOString());
-      toast({
-        title: 'Proposta enviada!',
-        description: 'A proposta foi marcada como enviada.',
-      });
-      loadEmissao();
-    } catch (error) {
-      toast({
-        title: 'Erro ao enviar',
-        description: 'Tente novamente.',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsSending(false);
     }
   };
 
@@ -202,13 +182,13 @@ export default function Proposal() {
               <Printer className="h-4 w-4 mr-2" />
               Imprimir
             </Button>
+            <StatusActions
+              currentStatus={emissao.status || emissao.status_proposta || 'rascunho'}
+              emissaoId={id!}
+              onStatusChange={loadEmissao}
+              onOpenEnvioDialog={() => setShowEnvioDialog(true)}
+            />
             <Dialog open={showEnvioDialog} onOpenChange={setShowEnvioDialog}>
-              <DialogTrigger asChild>
-                <Button>
-                  <Send className="h-4 w-4 mr-2" />
-                  Enviar Proposta
-                </Button>
-              </DialogTrigger>
               <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>Preencher dados para envio</DialogTitle>
