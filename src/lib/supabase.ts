@@ -212,26 +212,17 @@ export async function buscarCnpj(cnpj: string) {
 
   try {
     const { data, error } = await supabase.functions.invoke(
-      `buscar_cnpj?cnpj=${encodeURIComponent(cnpj)}`,
+      `buscar-cnpj?cnpj=${encodeURIComponent(cnpj)}`,
       { method: 'GET' }
     );
 
-    // Se há dados, retorna (mesmo que haja erro HTTP, os dados podem estar presentes)
-    if (data) {
-      console.log('✅ [buscarCnpj] Resposta:', data);
-      return data;
-    }
-
     if (error) {
       console.error('💥 [buscarCnpj] Erro:', error);
-      // Tenta extrair mensagem de erro da resposta
-      const errorMessage = typeof error === 'object' && error !== null
-        ? (error as any).message || 'Erro ao buscar CNPJ'
-        : 'Erro ao buscar CNPJ';
-      return { success: false, error: errorMessage };
+      return { success: false, error: 'Erro ao buscar CNPJ' };
     }
 
-    return { success: false, error: 'Resposta vazia do servidor' };
+    console.log('✅ [buscarCnpj] Resposta:', data);
+    return data;
   } catch (error) {
     console.error('💥 [buscarCnpj] Exceção:', error);
     const message = error instanceof Error ? error.message : 'Erro desconhecido';
