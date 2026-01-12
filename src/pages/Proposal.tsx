@@ -219,21 +219,63 @@ export default function Proposal() {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                 <div>
                   <p className="text-sm text-muted-foreground">Demandante</p>
-                  <p className="font-semibold">{emissao.demandante_proposta}</p>
+                  <p className="font-semibold">{emissao.demandante_proposta || '-'}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Categoria</p>
-                  <p className="font-semibold">{emissao.categorias?.codigo || emissao.categoria}</p>
+                  <p className="font-semibold">{emissao.categoria_info?.codigo || '-'}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Volume</p>
+                  <p className="text-sm text-muted-foreground">Tipo de Oferta</p>
+                  <p className="font-semibold">{emissao.tipo_oferta_info?.nome || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Veículo</p>
+                  <p className="font-semibold">{emissao.veiculo_info?.nome || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Volume Total</p>
                   <p className="font-semibold">{formatCurrency(emissao.volume)}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Séries</p>
-                  <p className="font-semibold">{emissao.quantidade_series || 1}</p>
+                  <p className="text-sm text-muted-foreground">Quantidade de Séries</p>
+                  <p className="font-semibold">{emissao.series?.length || 0}</p>
                 </div>
+                {emissao.lastro_info && (
+                  <div>
+                    <p className="text-sm text-muted-foreground">Lastro</p>
+                    <p className="font-semibold">{emissao.lastro_info.nome}</p>
+                  </div>
+                )}
               </div>
+
+              {/* Séries da Emissão */}
+              {emissao.series && emissao.series.length > 0 && (
+                <div className="mt-6">
+                  <p className="text-sm text-muted-foreground mb-3">Séries</p>
+                  <div className="rounded-lg border border-border overflow-hidden">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-muted/50">
+                          <TableHead>Série</TableHead>
+                          <TableHead className="text-right">Volume</TableHead>
+                          <TableHead className="text-right">Prazo (anos)</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {emissao.series.map((serie: any) => (
+                          <TableRow key={serie.id}>
+                            <TableCell className="font-medium">Série {serie.numero}</TableCell>
+                            <TableCell className="text-right">{formatCurrency(serie.valor_emissao)}</TableCell>
+                            <TableCell className="text-right">{serie.prazo || '-'}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              )}
+
               {emissao.empresa_destinataria && (
                 <div className="mt-4">
                   <p className="text-sm text-muted-foreground">Empresa Destinatária</p>
