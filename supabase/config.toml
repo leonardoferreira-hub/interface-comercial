@@ -54,3 +54,6 @@ verify_jwt = false
 
 [functions.registrob3_debpriv]
 verify_jwt = false
+
+[functions.buscar-cnpj]
+verify_jwt = false

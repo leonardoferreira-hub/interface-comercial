@@ -335,10 +335,13 @@ export type Database = {
         Row: {
           atualizado_em: string | null
           categoria: string | null
+          contato_email: string | null
+          contato_nome: string | null
           criado_em: string | null
           demandante_proposta: string | null
           empresa_cnpj: string | null
           empresa_destinataria: string | null
+          empresa_endereco: string | null
           empresa_nome_fantasia: string | null
           empresa_razao_social: string | null
           id: string
@@ -354,10 +357,13 @@ export type Database = {
         Insert: {
           atualizado_em?: string | null
           categoria?: string | null
+          contato_email?: string | null
+          contato_nome?: string | null
           criado_em?: string | null
           demandante_proposta?: string | null
           empresa_cnpj?: string | null
           empresa_destinataria?: string | null
+          empresa_endereco?: string | null
           empresa_nome_fantasia?: string | null
           empresa_razao_social?: string | null
           id?: string
@@ -373,10 +379,13 @@ export type Database = {
         Update: {
           atualizado_em?: string | null
           categoria?: string | null
+          contato_email?: string | null
+          contato_nome?: string | null
           criado_em?: string | null
           demandante_proposta?: string | null
           empresa_cnpj?: string | null
           empresa_destinataria?: string | null
+          empresa_endereco?: string | null
           empresa_nome_fantasia?: string | null
           empresa_razao_social?: string | null
           id?: string
