@@ -5,11 +5,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Badge } from '@/components/ui/badge';
 import { Header } from '@/components/Header';
 import { NavigationTabs } from '@/components/NavigationTabs';
 import { StatusBadge } from '@/components/StatusBadge';
 import { StatusActions } from '@/components/StatusActions';
 import { EnvioProposta } from '@/components/EnvioProposta';
+import { HistoricoVersoes } from '@/components/HistoricoVersoes';
 import { detalhesEmissao } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 
@@ -169,7 +171,14 @@ export default function Proposal() {
               <ArrowLeft className="h-4 w-4 mr-2" />
               Voltar
             </Button>
-            <h2 className="text-2xl font-bold">Proposta - {emissao.numero_emissao}</h2>
+            <div className="flex items-center gap-3">
+              <h2 className="text-2xl font-bold">Proposta - {emissao.numero_emissao}</h2>
+              {emissao.versao && (
+                <Badge variant="outline" className="text-xs">
+                  v{emissao.versao}
+                </Badge>
+              )}
+            </div>
             <div className="flex items-center gap-2 mt-1">
               <StatusBadge status={emissao.status || emissao.status_proposta || 'rascunho'} />
               <span className="text-sm text-muted-foreground">
@@ -449,6 +458,25 @@ export default function Proposal() {
                   <p className="text-2xl font-bold text-warning">{percentualVolume}%</p>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Histórico de Versões */}
+          <Card className="border-0 card-shadow">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center justify-between">
+                Histórico de Alterações
+                {emissao.versao && (
+                  <Badge variant="outline">v{emissao.versao}</Badge>
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <HistoricoVersoes 
+                emissaoId={id!} 
+                versaoAtual={emissao.versao || 1}
+                onRefresh={loadEmissao}
+              />
             </CardContent>
           </Card>
         </div>

@@ -6,6 +6,9 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Campos a ignorar na comparação de mudanças
+const camposIgnorados = ["atualizado_em", "criado_em", "id", "series"];
+
 serve(async (req) => {
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
@@ -28,6 +31,21 @@ serve(async (req) => {
     }
 
     console.log(`📝 [atualizar-emissao] ID: ${id}, dados:`, JSON.stringify(updateData));
+
+    // ====== BUSCAR DADOS ATUAIS PARA HISTÓRICO ======
+    const { data: emissaoAtual, error: fetchError } = await supabase
+      .from("emissoes")
+      .select("*")
+      .eq("id", id)
+      .single();
+
+    if (fetchError) {
+      console.error("❌ [atualizar-emissao] Erro ao buscar emissão atual:", fetchError);
+      return new Response(
+        JSON.stringify({ success: false, error: fetchError.message }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     // Resolver referências se necessário (tabelas no schema base_custos)
     if (updateData.categoria && typeof updateData.categoria === "string") {
@@ -70,11 +88,32 @@ serve(async (req) => {
       updateData.lastro = las?.id;
     }
 
+    // ====== CALCULAR CAMPOS ALTERADOS ======
+    const dadosAnteriores: Record<string, any> = {};
+    const dadosAlterados: Record<string, any> = {};
+
+    Object.keys(updateData).forEach((key) => {
+      if (camposIgnorados.includes(key)) return;
+      
+      const valorAtual = emissaoAtual[key];
+      const valorNovo = updateData[key];
+      
+      // Comparar valores (convertendo para string para comparação segura)
+      if (String(valorAtual) !== String(valorNovo)) {
+        dadosAnteriores[key] = valorAtual;
+        dadosAlterados[key] = valorNovo;
+      }
+    });
+
+    const temAlteracoes = Object.keys(dadosAlterados).length > 0;
+    const novaVersao = (emissaoAtual.versao || 1) + (temAlteracoes ? 1 : 0);
+
     // Atualizar emissão
     const { data: emissao, error: emissaoError } = await supabase
       .from("emissoes")
       .update({
         ...updateData,
+        versao: novaVersao,
         atualizado_em: new Date().toISOString(),
       })
       .eq("id", id)
@@ -87,6 +126,26 @@ serve(async (req) => {
         JSON.stringify({ success: false, error: emissaoError.message }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
+    }
+
+    // ====== REGISTRAR NO HISTÓRICO SE HOUVER ALTERAÇÕES ======
+    if (temAlteracoes) {
+      const { error: historicoError } = await supabase.from("historico_emissoes").insert({
+        id_emissao: id,
+        status_anterior: emissaoAtual.status,
+        status_novo: emissao.status,
+        tipo_alteracao: "dados",
+        versao: novaVersao,
+        dados_anteriores: dadosAnteriores,
+        dados_alterados: dadosAlterados,
+        motivo: `Dados atualizados: ${Object.keys(dadosAlterados).join(", ")}`,
+      });
+
+      if (historicoError) {
+        console.error("⚠️ [atualizar-emissao] Erro ao salvar histórico:", historicoError);
+      } else {
+        console.log(`📜 [atualizar-emissao] Histórico salvo - v${novaVersao}`);
+      }
     }
 
     // Atualizar séries se fornecidas
@@ -113,7 +172,7 @@ serve(async (req) => {
       }
     }
 
-    console.log(`✅ [atualizar-emissao] Emissão atualizada: ${emissao.numero_emissao}`);
+    console.log(`✅ [atualizar-emissao] Emissão atualizada: ${emissao.numero_emissao} (v${novaVersao})`);
 
     return new Response(
       JSON.stringify({

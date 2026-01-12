@@ -284,6 +284,30 @@ export async function finalizarProposta(id: string, status: string, data_envio?:
   }
 }
 
+// HISTÓRICO
+export async function buscarHistorico(id: string) {
+  console.log('📜 [buscarHistorico] ID:', id);
+
+  try {
+    const { data, error } = await supabase.functions.invoke(
+      `fluxo-0-historico-emissao?id=${encodeURIComponent(id)}`,
+      { method: 'GET' }
+    );
+
+    if (error) {
+      console.error('💥 [buscarHistorico] Erro:', error);
+      return { success: false, error: error.message };
+    }
+
+    console.log('✅ [buscarHistorico] Sucesso:', data);
+    return data;
+  } catch (error) {
+    console.error('💥 [buscarHistorico] Erro:', error);
+    const message = error instanceof Error ? error.message : 'Erro desconhecido';
+    return { success: false, error: message };
+  }
+}
+
 // FLUXO CUSTOS
 export async function fetchCustosPorCombinacao(params: FetchCustosParams) {
   console.log('🧮 [fetchCustosPorCombinacao] Params:', params);
