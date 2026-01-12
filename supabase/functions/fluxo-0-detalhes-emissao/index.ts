@@ -29,7 +29,7 @@ serve(async (req) => {
 
     console.log(`🔍 [detalhes-emissao] Buscando emissão ID: ${id}`);
 
-    // Buscar emissão com relacionamentos
+    // Buscar emissão
     const { data: emissao, error: emissaoError } = await supabase
       .from("emissoes")
       .select("*")
@@ -42,6 +42,52 @@ serve(async (req) => {
         JSON.stringify({ success: false, error: emissaoError.message }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
+    }
+
+    // Buscar nomes de referência do schema base_custos
+    let categoriaInfo = null;
+    let veiculoInfo = null;
+    let tipoOfertaInfo = null;
+    let lastroInfo = null;
+
+    if (emissao.categoria) {
+      const { data } = await supabase
+        .schema("base_custos")
+        .from("categorias")
+        .select("id, codigo, nome")
+        .eq("id", emissao.categoria)
+        .single();
+      categoriaInfo = data;
+    }
+
+    if (emissao.veiculo) {
+      const { data } = await supabase
+        .schema("base_custos")
+        .from("veiculos")
+        .select("id, codigo, nome")
+        .eq("id", emissao.veiculo)
+        .single();
+      veiculoInfo = data;
+    }
+
+    if (emissao.tipo_oferta) {
+      const { data } = await supabase
+        .schema("base_custos")
+        .from("tipos_oferta")
+        .select("id, codigo, nome")
+        .eq("id", emissao.tipo_oferta)
+        .single();
+      tipoOfertaInfo = data;
+    }
+
+    if (emissao.lastro) {
+      const { data } = await supabase
+        .schema("base_custos")
+        .from("lastros")
+        .select("id, codigo, nome")
+        .eq("id", emissao.lastro)
+        .single();
+      lastroInfo = data;
     }
 
     // Buscar séries
@@ -80,13 +126,17 @@ serve(async (req) => {
       console.error("❌ [detalhes-emissao] Erro ao buscar dados empresa:", empresaError);
     }
 
-    console.log(`✅ [detalhes-emissao] Emissão encontrada: ${emissao.numero_emissao}`);
+    console.log(`✅ [detalhes-emissao] Emissão encontrada: ${emissao.numero_emissao}, ${series?.length || 0} séries`);
 
     return new Response(
       JSON.stringify({
         success: true,
         data: {
           ...emissao,
+          categoria_info: categoriaInfo,
+          veiculo_info: veiculoInfo,
+          tipo_oferta_info: tipoOfertaInfo,
+          lastro_info: lastroInfo,
           series: series || [],
           custos: custos || null,
           dados_empresa: dadosEmpresa || null,
