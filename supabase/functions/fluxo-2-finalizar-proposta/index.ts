@@ -36,10 +36,10 @@ serve(async (req) => {
 
     console.log(`🏁 [finalizar-proposta] ID: ${id}, status: ${status}`);
 
-    // Buscar status atual
+    // Buscar status atual e versão
     const { data: emissaoAtual, error: fetchError } = await supabase
       .from("emissoes")
-      .select("status, numero_emissao")
+      .select("status, numero_emissao, versao")
       .eq("id", id)
       .single();
 
@@ -51,11 +51,16 @@ serve(async (req) => {
       );
     }
 
-    // Atualizar status
+    // Incrementar versão se status mudou
+    const statusMudou = emissaoAtual.status !== status;
+    const novaVersao = (emissaoAtual.versao || 1) + (statusMudou ? 1 : 0);
+
+    // Atualizar status e versão
     const { data: emissao, error: updateError } = await supabase
       .from("emissoes")
       .update({
         status,
+        versao: novaVersao,
         atualizado_em: new Date().toISOString(),
       })
       .eq("id", id)
@@ -70,15 +75,21 @@ serve(async (req) => {
       );
     }
 
-    // Registrar no histórico
-    await supabase.from("historico_emissoes").insert({
-      id_emissao: id,
-      status_anterior: emissaoAtual.status,
-      status_novo: status,
-      motivo: `Proposta finalizada com status: ${status}`,
-    });
+    // Registrar no histórico com versão
+    if (statusMudou) {
+      await supabase.from("historico_emissoes").insert({
+        id_emissao: id,
+        status_anterior: emissaoAtual.status,
+        status_novo: status,
+        tipo_alteracao: "status",
+        versao: novaVersao,
+        dados_anteriores: { status: emissaoAtual.status },
+        dados_alterados: { status },
+        motivo: `Status alterado: ${emissaoAtual.status} → ${status}`,
+      });
+    }
 
-    console.log(`✅ [finalizar-proposta] Status atualizado de "${emissaoAtual.status}" para "${status}"`);
+    console.log(`✅ [finalizar-proposta] Status atualizado de "${emissaoAtual.status}" para "${status}" (v${novaVersao})`);
 
     return new Response(
       JSON.stringify({

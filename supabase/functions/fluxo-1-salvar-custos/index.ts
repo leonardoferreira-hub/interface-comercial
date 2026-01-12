@@ -88,12 +88,28 @@ serve(async (req) => {
 
     console.log(`💰 [salvar-custos] Emissão: ${id_emissao}, custos: ${custos?.length || 0}, custos_series: ${custos_series?.length || 0}`);
 
+    // ====== BUSCAR VERSÃO ATUAL DA EMISSÃO ======
+    const { data: emissaoAtual } = await supabase
+      .from("emissoes")
+      .select("versao, status")
+      .eq("id", id_emissao)
+      .single();
+
+    const versaoAtual = emissaoAtual?.versao || 1;
+
     // ====== 1. SALVAR custos_emissao (totais) ======
     const { data: existingCustos } = await supabase
       .from("custos_emissao")
-      .select("id")
+      .select("id, total_upfront, total_anual, total_mensal")
       .eq("id_emissao", id_emissao)
       .single();
+
+    // Verificar se houve alteração nos totais
+    const custosAnteriores = existingCustos ? {
+      total_upfront: existingCustos.total_upfront,
+      total_anual: existingCustos.total_anual,
+      total_mensal: existingCustos.total_mensal,
+    } : null;
 
     let custosEmissaoId: string;
 
@@ -287,6 +303,43 @@ serve(async (req) => {
         }
         console.log(`✅ [salvar-custos] Custos por série salvos em custos_series`);
       }
+    }
+
+    // ====== 5. REGISTRAR NO HISTÓRICO ======
+    const custosNovos = {
+      total_upfront: totais?.total_upfront || 0,
+      total_anual: totais?.total_anual || 0,
+      total_mensal: totais?.total_mensal || 0,
+    };
+
+    const temAlteracao = custosAnteriores && (
+      custosAnteriores.total_upfront !== custosNovos.total_upfront ||
+      custosAnteriores.total_anual !== custosNovos.total_anual ||
+      custosAnteriores.total_mensal !== custosNovos.total_mensal
+    );
+
+    if (temAlteracao || !existingCustos) {
+      const novaVersao = versaoAtual + 1;
+      
+      // Atualizar versão da emissão
+      await supabase
+        .from("emissoes")
+        .update({ versao: novaVersao, atualizado_em: new Date().toISOString() })
+        .eq("id", id_emissao);
+
+      // Registrar no histórico
+      await supabase.from("historico_emissoes").insert({
+        id_emissao,
+        status_anterior: emissaoAtual?.status || "rascunho",
+        status_novo: emissaoAtual?.status || "rascunho",
+        tipo_alteracao: "custos",
+        versao: novaVersao,
+        dados_anteriores: custosAnteriores || {},
+        dados_alterados: custosNovos,
+        motivo: existingCustos ? "Custos atualizados" : "Custos calculados pela primeira vez",
+      });
+
+      console.log(`📜 [salvar-custos] Histórico salvo - v${novaVersao}`);
     }
 
     console.log(`✅ [salvar-custos] Todos os custos salvos para emissão ${id_emissao}`);

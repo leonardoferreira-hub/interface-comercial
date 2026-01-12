@@ -10,6 +10,9 @@ verify_jwt = false
 [functions.fluxo-0-detalhes-emissao]
 verify_jwt = false
 
+[functions.fluxo-0-historico-emissao]
+verify_jwt = false
+
 [functions.fluxo-1-criar-emissao]
 verify_jwt = false
 
