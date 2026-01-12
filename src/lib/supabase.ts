@@ -184,7 +184,7 @@ export async function gerarPDF(
   console.log('📄 [gerarPDF] Gerando para ID:', id);
 
   try {
-    const { data, error } = await supabase.functions.invoke('gerar_proposta_pdf', {
+    const { data, error } = await supabase.functions.invoke('gerar-proposta-pdf', {
       method: 'POST',
       body: {
         emissao_id: id,
