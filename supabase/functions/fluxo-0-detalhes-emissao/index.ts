@@ -17,9 +17,8 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const body = await req.json().catch(() => ({}));
     const url = new URL(req.url);
-    const id = body.id || url.searchParams.get("id");
+    const id = url.searchParams.get("id");
 
     if (!id) {
       return new Response(
@@ -33,13 +32,7 @@ serve(async (req) => {
     // Buscar emissão com relacionamentos
     const { data: emissao, error: emissaoError } = await supabase
       .from("emissoes")
-      .select(`
-        *,
-        categorias:categoria(id, codigo, nome),
-        veiculos:veiculo(id, codigo, nome),
-        tipos_oferta:tipo_oferta(id, codigo, nome),
-        lastros:lastro(id, codigo, nome)
-      `)
+      .select("*")
       .eq("id", id)
       .single();
 
