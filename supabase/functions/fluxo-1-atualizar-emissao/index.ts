@@ -21,7 +21,7 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     const body = await req.json();
-    const { id, ...updateData } = body;
+    const { id, series: seriesPayload, ...updateData } = body;
 
     if (!id) {
       return new Response(
@@ -91,6 +91,7 @@ serve(async (req) => {
     // Remover campos que não existem na tabela emissoes
     delete updateData.quantidade_series;
     delete updateData.oferta; // Já foi convertido para tipo_oferta
+    delete updateData.series; // Séries são tratadas separadamente
 
     // ====== CALCULAR CAMPOS ALTERADOS ======
     const dadosAnteriores: Record<string, any> = {};
@@ -153,12 +154,12 @@ serve(async (req) => {
     }
 
     // Atualizar séries se fornecidas
-    if (updateData.series && Array.isArray(updateData.series)) {
+    if (Array.isArray(seriesPayload) && seriesPayload.length > 0) {
       // Deletar séries existentes
       await supabase.from("series").delete().eq("id_emissao", id);
 
       // Inserir novas séries
-      const seriesData = updateData.series.map((serie: any, index: number) => ({
+      const seriesData = seriesPayload.map((serie: any, index: number) => ({
         id_emissao: id,
         numero: index + 1,
         valor_emissao: serie.valor_emissao || 0,
