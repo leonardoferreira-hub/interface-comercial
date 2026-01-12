@@ -262,10 +262,7 @@ serve(async (req) => {
       const { data: custosPrincipais, error: errorPrincipal } = await supabase
         .schema("base_custos")
         .from(tabela)
-        .select(`
-          *,
-          prestadores:id_prestador(id, nome)
-        `)
+        .select("*")
         .eq("ativo", true);
 
       if (errorPrincipal) {
@@ -302,10 +299,7 @@ serve(async (req) => {
         const { data: custosVeiculo, error: errorVeiculo } = await supabase
           .schema("base_custos")
           .from(tabelaVeiculo)
-          .select(`
-            *,
-            prestadores:id_prestador(id, nome)
-          `)
+          .select("*")
           .eq("ativo", true);
 
         if (errorVeiculo) {
@@ -346,7 +340,7 @@ serve(async (req) => {
         ...custo,
         valor_upfront_calculado: valorUpfront,
         valor_recorrente_calculado: valorRecorrente,
-        prestador_nome: custo.prestadores?.nome || null,
+        prestador_nome: null, // Prestadores estão em schema diferente
         tipo_custo: "fixo",
       };
     });
