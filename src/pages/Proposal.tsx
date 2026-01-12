@@ -204,7 +204,7 @@ export default function Proposal() {
             </Button>
             <Dialog open={showEnvioDialog} onOpenChange={setShowEnvioDialog}>
               <DialogTrigger asChild>
-                <Button disabled={emissao.status === 'enviada'}>
+                <Button>
                   <Send className="h-4 w-4 mr-2" />
                   Enviar Proposta
                 </Button>
