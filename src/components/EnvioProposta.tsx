@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
-import { buscarCnpj, atualizarDadosEmpresa, gerarPDF } from '@/lib/supabase';
+import { buscarCnpj, atualizarDadosEmpresa, gerarPDF, finalizarProposta } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 
 interface EnvioPropostaProps {
@@ -188,9 +188,16 @@ export function EnvioProposta({ emissaoId, dadosIniciais, onSuccess, onCancel }:
       });
 
       if (pdfResult.success && pdfResult.data?.html) {
+        // Atualizar status para 'enviada'
+        const statusResult = await finalizarProposta(emissaoId, 'enviada');
+        
+        if (!statusResult.success) {
+          console.warn('Aviso: PDF gerado mas status não foi atualizado:', statusResult.error);
+        }
+
         toast({
-          title: 'Proposta gerada!',
-          description: 'O PDF será aberto em uma nova aba.',
+          title: 'Proposta enviada!',
+          description: 'O PDF foi gerado e a proposta foi marcada como enviada.',
         });
 
         // Open HTML in new tab

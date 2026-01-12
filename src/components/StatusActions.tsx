@@ -12,8 +12,9 @@ interface StatusActionsProps {
 }
 
 const statusTransitions: Record<string, { label: string; nextStatus: string; icon: React.ReactNode; variant?: 'default' | 'outline' | 'destructive' }[]> = {
-  rascunho: [
+rascunho: [
     { label: 'Enviar Proposta', nextStatus: 'open_dialog', icon: <Send className="h-4 w-4 mr-2" />, variant: 'default' },
+    { label: 'Marcar como Aceita', nextStatus: 'aceita', icon: <Check className="h-4 w-4 mr-2" />, variant: 'outline' },
   ],
   enviada: [
     { label: 'Marcar como Aceita', nextStatus: 'aceita', icon: <Check className="h-4 w-4 mr-2" />, variant: 'default' },
