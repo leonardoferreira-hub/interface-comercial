@@ -194,8 +194,8 @@ export async function finalizarProposta(id: string, status: string, data_envio?:
   console.log('🏁 [finalizarProposta] ID:', id, 'Status:', status);
 
   try {
-    const { data, error } = await supabase.functions.invoke(`fluxo-2-finalizar-proposta/${id}`, {
-      body: { status, data_envio },
+    const { data, error } = await supabase.functions.invoke('fluxo-2-finalizar-proposta', {
+      body: { id, status, data_envio },
     });
 
     if (error) {
