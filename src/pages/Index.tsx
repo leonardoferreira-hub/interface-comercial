@@ -254,6 +254,7 @@ export default function Index() {
               onView={handleView}
               onEdit={handleEdit}
               onExport={handleExport}
+              onStatusChange={loadEmissoes}
             />
 
             {/* Pagination */}
