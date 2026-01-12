@@ -17,6 +17,16 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
+    // Buscar categorias do schema base_custos para mapear UUID -> código
+    const { data: categorias } = await supabase
+      .schema("base_custos")
+      .from("categorias")
+      .select("id, codigo");
+
+    const categoriaMap = new Map<string, string>(
+      categorias?.map((c: any) => [c.id, c.codigo]) || []
+    );
+
     const url = new URL(req.url);
     const page = parseInt(url.searchParams.get("page") || "1");
     const limit = parseInt(url.searchParams.get("limit") || "10");
@@ -59,6 +69,9 @@ serve(async (req) => {
     // Map fields to match frontend expectations
     const mappedData = data?.map((emissao: any) => ({
       ...emissao,
+      categoria: emissao.categoria 
+        ? categoriaMap.get(emissao.categoria) || emissao.categoria 
+        : null,
       status_proposta: emissao.status || 'rascunho',
       data_criacao: emissao.criado_em,
     }));
