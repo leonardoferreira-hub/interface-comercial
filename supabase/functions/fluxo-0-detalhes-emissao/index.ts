@@ -133,6 +133,8 @@ serve(async (req) => {
         success: true,
         data: {
           ...emissao,
+          status_proposta: emissao.status || 'rascunho',
+          data_criacao: emissao.criado_em,
           categoria_info: categoriaInfo,
           veiculo_info: veiculoInfo,
           tipo_oferta_info: tipoOfertaInfo,
