@@ -88,6 +88,10 @@ serve(async (req) => {
       updateData.lastro = las?.id;
     }
 
+    // Remover campos que não existem na tabela emissoes
+    delete updateData.quantidade_series;
+    delete updateData.oferta; // Já foi convertido para tipo_oferta
+
     // ====== CALCULAR CAMPOS ALTERADOS ======
     const dadosAnteriores: Record<string, any> = {};
     const dadosAlterados: Record<string, any> = {};
