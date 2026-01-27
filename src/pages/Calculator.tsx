@@ -142,6 +142,7 @@ export default function Calculator() {
   const [isLoadingEdit, setIsLoadingEdit] = useState(false);
 
   const [basicData, setBasicData] = useState<EmissaoData>({
+    nome_operacao: '',
     demandante_proposta: '',
     empresa_destinataria: '',
     empresa_cnpj: '',
@@ -174,8 +175,10 @@ export default function Calculator() {
         
         // Populate basic data
         setBasicData({
+          nome_operacao: data.nome_operacao || data.nome_operacao || data.nome || '',
           demandante_proposta: data.demandante_proposta || '',
           empresa_destinataria: data.empresa_destinataria || '',
+          empresa_cnpj: data.empresa_cnpj || '',
           categoria: data.categorias?.codigo || data.categoria || '',
           oferta: data.tipos_oferta?.codigo || data.oferta || '',
           veiculo: data.veiculos?.codigo || data.veiculo || '',
@@ -313,6 +316,7 @@ export default function Calculator() {
 
       // Build payload with correct fields
       const emissaoPayload = {
+        nome_operacao: (basicData.nome_operacao || basicData.empresa_destinataria || '').trim() || null,
         demandante_proposta: basicData.demandante_proposta,
         empresa_destinataria: basicData.empresa_destinataria,
         empresa_cnpj: basicData.empresa_cnpj || null,

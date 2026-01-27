@@ -15,6 +15,8 @@ export interface Serie {
 }
 
 export interface EmissaoData {
+  /** Nome da operação (ex.: "Leocorp2"). Se vazio, usamos fallback para empresa_destinataria. */
+  nome_operacao: string;
   demandante_proposta: string;
   empresa_destinataria: string;
   /** CNPJ para enriquecer a emissão (razão social) ao enviar proposta */
@@ -163,6 +165,19 @@ export function Step1BasicData({ data, onChange }: Step1Props) {
       <CardContent className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
+            <Label htmlFor="nome_operacao">Nome da Operação *</Label>
+            <Input
+              id="nome_operacao"
+              placeholder="Ex.: Leocorp2"
+              value={data.nome_operacao}
+              onChange={(e) => handleChange('nome_operacao', e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">
+              Esse nome aparece na Estruturação. Se ficar em branco, usaremos a Empresa Destinatária.
+            </p>
+          </div>
+
+          <div className="space-y-2">
             <Label htmlFor="demandante">Demandante da Proposta *</Label>
             <Input
               id="demandante"
@@ -171,7 +186,8 @@ export function Step1BasicData({ data, onChange }: Step1Props) {
               onChange={(e) => handleChange('demandante_proposta', e.target.value)}
             />
           </div>
-          <div className="space-y-2">
+
+          <div className="space-y-2 md:col-span-2">
             <Label htmlFor="empresa">Empresa Destinatária *</Label>
             <Input
               id="empresa"
