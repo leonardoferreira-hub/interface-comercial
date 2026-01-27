@@ -43,16 +43,21 @@ export function StatusActions({ currentStatus, emissaoId, onStatusChange, onOpen
 
     setIsUpdating(true);
     try {
-      await finalizarProposta(emissaoId, nextStatus);
+      const res: any = await finalizarProposta(emissaoId, nextStatus);
+
+      if (res?.success === false) {
+        throw new Error(res?.error || 'Falha ao atualizar status');
+      }
+
       toast({
         title: 'Status atualizado!',
         description: `Proposta atualizada para "${nextStatus}".`,
       });
       onStatusChange();
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: 'Erro ao atualizar status',
-        description: 'Tente novamente.',
+        description: error?.message || 'Tente novamente.',
         variant: 'destructive',
       });
     } finally {

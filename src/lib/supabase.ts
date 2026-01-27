@@ -276,6 +276,13 @@ export async function finalizarProposta(id: string, status: string, data_envio?:
     }
 
     console.log('✅ [finalizarProposta] Sucesso:', data);
+
+    // Padronizar: se a edge function respondeu { success: false }, tratar como erro.
+    if ((data as any)?.success === false) {
+      const msg = (data as any)?.error || 'Falha ao atualizar status';
+      return { success: false, error: msg };
+    }
+
     return data;
   } catch (error) {
     console.error('💥 [finalizarProposta] Erro:', error);
