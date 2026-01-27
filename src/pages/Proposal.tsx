@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Printer, FileText } from 'lucide-react';
+import { ArrowLeft, Printer, FileText, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -12,7 +12,7 @@ import { StatusBadge } from '@/components/StatusBadge';
 import { StatusActions } from '@/components/StatusActions';
 import { EnvioProposta } from '@/components/EnvioProposta';
 import { HistoricoVersoes } from '@/components/HistoricoVersoes';
-import { detalhesEmissao } from '@/lib/supabase';
+import { buscarCnpj, detalhesEmissao } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 
 export default function Proposal() {
@@ -25,6 +25,9 @@ export default function Proposal() {
   const [isLoading, setIsLoading] = useState(true);
   const [showEnvioDialog, setShowEnvioDialog] = useState(false);
 
+  const [razaoSocialLookup, setRazaoSocialLookup] = useState<string>('');
+  const [cnpjLookupStatus, setCnpjLookupStatus] = useState<'idle' | 'loading' | 'ok' | 'notfound' | 'error'>('idle');
+
   useEffect(() => {
     if (id) {
       loadEmissao();
@@ -32,6 +35,50 @@ export default function Proposal() {
       setIsLoading(false);
     }
   }, [id]);
+
+  // Mostrar Razão Social na Proposta (consulta via CNPJ quando não vier preenchida)
+  useEffect(() => {
+    const cnpj = (emissao?.empresa_cnpj || '').replace(/\D/g, '');
+
+    // se já veio do banco, usa direto
+    if (emissao?.empresa_razao_social) {
+      setRazaoSocialLookup(String(emissao.empresa_razao_social));
+      setCnpjLookupStatus('ok');
+      return;
+    }
+
+    if (!cnpj || cnpj.length < 14) {
+      setRazaoSocialLookup('');
+      setCnpjLookupStatus('idle');
+      return;
+    }
+
+    let cancelled = false;
+    setCnpjLookupStatus('loading');
+    const t = setTimeout(async () => {
+      try {
+        const res = await buscarCnpj(cnpj);
+        const rs = (res as any)?.razao_social || (res as any)?.razaoSocial || (res as any)?.data?.razao_social;
+        if (cancelled) return;
+        if (rs) {
+          setRazaoSocialLookup(String(rs));
+          setCnpjLookupStatus('ok');
+        } else {
+          setRazaoSocialLookup('');
+          setCnpjLookupStatus('notfound');
+        }
+      } catch {
+        if (cancelled) return;
+        setRazaoSocialLookup('');
+        setCnpjLookupStatus('error');
+      }
+    }, 350);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
+  }, [emissao?.empresa_cnpj, emissao?.empresa_razao_social]);
 
   const loadEmissao = async () => {
     try {
@@ -234,6 +281,21 @@ export default function Proposal() {
                 <div>
                   <p className="text-sm text-muted-foreground">Empresa Destinatária</p>
                   <p className="font-semibold">{emissao.empresa_destinataria || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">CNPJ</p>
+                  <p className="font-semibold tabular-nums">{emissao.empresa_cnpj || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Razão Social</p>
+                  <div className="flex items-center gap-2">
+                    <p className="font-semibold truncate">
+                      {emissao.empresa_razao_social || razaoSocialLookup || '-'}
+                    </p>
+                    {cnpjLookupStatus === 'loading' ? (
+                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                    ) : null}
+                  </div>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Categoria</p>
