@@ -144,6 +144,7 @@ export default function Calculator() {
   const [basicData, setBasicData] = useState<EmissaoData>({
     demandante_proposta: '',
     empresa_destinataria: '',
+    empresa_cnpj: '',
     categoria: '',
     oferta: '',
     veiculo: '',
@@ -314,6 +315,7 @@ export default function Calculator() {
       const emissaoPayload = {
         demandante_proposta: basicData.demandante_proposta,
         empresa_destinataria: basicData.empresa_destinataria,
+        empresa_cnpj: basicData.empresa_cnpj || null,
         categoria,
         oferta: basicData.oferta || null,
         veiculo: basicData.veiculo || null,

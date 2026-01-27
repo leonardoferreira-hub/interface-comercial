@@ -16,6 +16,8 @@ export interface Serie {
 export interface EmissaoData {
   demandante_proposta: string;
   empresa_destinataria: string;
+  /** CNPJ para enriquecer a emissão (razão social) ao enviar proposta */
+  empresa_cnpj: string;
   categoria: string;
   oferta: string;
   veiculo: string;
@@ -127,6 +129,21 @@ export function Step1BasicData({ data, onChange }: Step1Props) {
               value={data.empresa_destinataria}
               onChange={(e) => handleChange('empresa_destinataria', e.target.value)}
             />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-2">
+            <Label htmlFor="empresa_cnpj">CNPJ (opcional)</Label>
+            <Input
+              id="empresa_cnpj"
+              placeholder="00.000.000/0000-00"
+              value={data.empresa_cnpj}
+              onChange={(e) => handleChange('empresa_cnpj', e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">
+              Usado para puxar razão social ao enviar proposta (se disponível).
+            </p>
           </div>
         </div>
 
