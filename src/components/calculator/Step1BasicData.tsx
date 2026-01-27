@@ -3,9 +3,10 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { FileText } from 'lucide-react';
-import { useEffect } from 'react';
+import { FileText, Loader2 } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import { CurrencyInput } from '@/components/ui/currency-input';
+import { buscarCnpj } from '@/lib/supabase';
 
 export interface Serie {
   numero: number;
@@ -36,12 +37,61 @@ export function Step1BasicData({ data, onChange }: Step1Props) {
     onChange({ ...data, [field]: value });
   };
 
+  const [razaoSocial, setRazaoSocial] = useState<string>('');
+  const [cnpjStatus, setCnpjStatus] = useState<'idle' | 'loading' | 'ok' | 'notfound' | 'error'>('idle');
+
+  const cnpjDigits = useMemo(() => (data.empresa_cnpj || '').replace(/\D/g, ''), [data.empresa_cnpj]);
+
   // Lógica condicional: CRI/CRA usam Lastro, DEB/CR usam Oferta/Veículo
   const showLastro = ['CRI', 'CRA'].includes(data.categoria);
   const showOfertaVeiculo = ['DEB', 'CR', 'NC'].includes(data.categoria);
   
   // Prazo obrigatório para Privada Cetipada e CVM 160
   const requiresPrazo = ['Oferta Privada Cetipada', 'Oferta CVM 160'].includes(data.oferta);
+
+  // Buscar razão social ao preencher CNPJ
+  useEffect(() => {
+    if (!cnpjDigits) {
+      setRazaoSocial('');
+      setCnpjStatus('idle');
+      return;
+    }
+
+    // Só consulta quando tiver 14 dígitos
+    if (cnpjDigits.length < 14) {
+      setRazaoSocial('');
+      setCnpjStatus('idle');
+      return;
+    }
+
+    let cancelled = false;
+    setCnpjStatus('loading');
+
+    const t = setTimeout(async () => {
+      try {
+        const res = await buscarCnpj(cnpjDigits);
+        // Espera-se algo como { razao_social } ou { razaoSocial }
+        const rs = (res as any)?.razao_social || (res as any)?.razaoSocial || (res as any)?.data?.razao_social;
+        if (cancelled) return;
+        if (rs) {
+          setRazaoSocial(String(rs));
+          setCnpjStatus('ok');
+        } else {
+          setRazaoSocial('');
+          setCnpjStatus('notfound');
+        }
+      } catch (e) {
+        if (cancelled) return;
+        setRazaoSocial('');
+        setCnpjStatus('error');
+      }
+    }, 450);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
+  }, [cnpjDigits]);
 
   // Limpar campos quando categoria muda
   useEffect(() => {
@@ -142,8 +192,28 @@ export function Step1BasicData({ data, onChange }: Step1Props) {
               onChange={(e) => handleChange('empresa_cnpj', e.target.value)}
             />
             <p className="text-xs text-muted-foreground">
-              Usado para puxar razão social ao enviar proposta (se disponível).
+              Ao preencher, buscamos a razão social automaticamente.
             </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Razão Social (consulta)</Label>
+            <div className="relative">
+              <Input
+                value={razaoSocial || (cnpjStatus === 'loading' ? 'Consultando…' : '')}
+                disabled
+                readOnly
+              />
+              {cnpjStatus === 'loading' ? (
+                <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
+              ) : null}
+            </div>
+            {cnpjStatus === 'notfound' ? (
+              <p className="text-xs text-muted-foreground">CNPJ não encontrado (ou sem retorno).</p>
+            ) : null}
+            {cnpjStatus === 'error' ? (
+              <p className="text-xs text-destructive">Falha ao consultar CNPJ.</p>
+            ) : null}
           </div>
         </div>
 
