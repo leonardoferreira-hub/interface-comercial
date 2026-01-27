@@ -271,8 +271,25 @@ export async function finalizarProposta(id: string, status: string, data_envio?:
     });
 
     if (error) {
-      console.error('💥 [finalizarProposta] Erro:', error);
-      return { success: false, error: error.message };
+      // Supabase retorna FunctionsHttpError quando a Edge Function devolve non-2xx
+      const anyErr: any = error as any;
+      const status = anyErr?.context?.status;
+      const body = anyErr?.context?.body;
+      const extra = body
+        ? (typeof body === 'string' ? body : JSON.stringify(body))
+        : '';
+
+      console.error('💥 [finalizarProposta] Erro:', error, { status, extra });
+
+      const msg = [
+        error.message,
+        status ? `HTTP ${status}` : null,
+        extra ? `Detalhe: ${extra}` : null,
+      ]
+        .filter(Boolean)
+        .join(' — ');
+
+      return { success: false, error: msg };
     }
 
     console.log('✅ [finalizarProposta] Sucesso:', data);
