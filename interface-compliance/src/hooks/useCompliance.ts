@@ -65,8 +65,7 @@ export function useDashboard() {
     queryKey: ['compliance-dashboard'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .schema('compliance')
-        .from('v_dashboard')
+        .from('v_compliance_dashboard')
         .select('*')
         .single();
       
@@ -81,8 +80,7 @@ export function useVerificacoesPendentes(status?: string) {
     queryKey: ['verificacoes-pendentes', status],
     queryFn: async () => {
       let query = supabase
-        .schema('compliance')
-        .from('verificacoes_pendentes')
+        .from('v_compliance_verificacoes')
         .select('*')
         .order('data_solicitacao', { ascending: false });
       
@@ -102,8 +100,7 @@ export function useCNPJsVerificados(cnpj?: string) {
     queryKey: ['cnpjs-verificados', cnpj],
     queryFn: async () => {
       let query = supabase
-        .schema('compliance')
-        .from('cnpjs_verificados')
+        .from('v_compliance_cnpjs')
         .select('*')
         .order('data_verificacao', { ascending: false });
       
@@ -123,8 +120,7 @@ export function useInvestidores(status?: string) {
     queryKey: ['compliance-investidores', status],
     queryFn: async () => {
       let query = supabase
-        .schema('compliance')
-        .from('investidores')
+        .from('v_compliance_investidores')
         .select('*')
         .order('criado_em', { ascending: false });
       
