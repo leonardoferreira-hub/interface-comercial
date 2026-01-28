@@ -37,15 +37,19 @@ export default function VerificacoesPage() {
   const [selecionado, setSelecionado] = useState<VerificacaoPendente | null>(null);
   const [observacao, setObservacao] = useState('');
   
-  const { data: verificacoes, isLoading } = useVerificacoesPendentes(filtroStatus || undefined);
+  const { data: verificacoes, isLoading, error } = useVerificacoesPendentes(filtroStatus || undefined);
   const analisar = useAnalisarVerificacao();
   const { data: cnpjData, consultar, isLoading: consultando } = useConsultaCNPJ();
+
+  // Debug
+  console.log('Verificacoes:', verificacoes);
+  console.log('Error:', error);
 
   const filtered = verificacoes?.filter(v => 
     v.cnpj.includes(busca) ||
     v.nome_entidade?.toLowerCase().includes(busca.toLowerCase()) ||
     v.numero_emissao?.toLowerCase().includes(busca.toLowerCase())
-  );
+  ) || [];
 
   const handleAnalisar = async (id: string, status: 'aprovado' | 'reprovado' | 'em_analise') => {
     if (status === 'reprovado' && !observacao.trim()) {
@@ -73,6 +77,23 @@ export default function VerificacoesPage() {
         <Navigation />
         <div className="flex justify-center py-20">
           <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen">
+        <Navigation />
+        <div className="container mx-auto py-6 px-4">
+          <Card className="border-red-200">
+            <CardContent className="py-8 text-center">
+              <AlertCircle className="h-12 w-12 mx-auto mb-4 text-red-500" />
+              <p className="text-red-600">Erro ao carregar dados</p>
+              <p className="text-sm text-muted-foreground mt-2">{error.message}</p>
+            </CardContent>
+          </Card>
         </div>
       </div>
     );
@@ -116,7 +137,14 @@ export default function VerificacoesPage() {
 
         {/* Lista */}
         <div className="space-y-4">
-          {filtered?.length === 0 ? (
+          {verificacoes === undefined ? (
+            <Card>
+              <CardContent className="py-12 text-center text-muted-foreground">
+                <Building2 className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>Carregando dados...</p>
+              </CardContent>
+            </Card>
+          ) : filtered.length === 0 ? (
             <Card>
               <CardContent className="py-12 text-center text-muted-foreground">
                 <Building2 className="h-12 w-12 mx-auto mb-4 opacity-50" />
@@ -124,7 +152,7 @@ export default function VerificacoesPage() {
               </CardContent>
             </Card>
           ) : (
-            filtered?.map((verif) => {
+            filtered.map((verif) => {
               const status = statusConfig[verif.status];
               const StatusIcon = status.icon;
               const isSelecionado = selecionado?.id === verif.id;

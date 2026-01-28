@@ -41,14 +41,17 @@ export default function InvestidoresPage() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [investidorSelecionado, setInvestidorSelecionado] = useState<Investidor | null>(null);
   
-  const { data: investidores, isLoading } = useInvestidores(filtroStatus || undefined);
+  const { data: investidores, isLoading, error } = useInvestidores(filtroStatus || undefined);
   const criar = useCriarInvestidor();
   const analisar = useAnalisarInvestidor();
+
+  console.log('Investidores:', investidores);
+  console.log('Error:', error);
 
   const filtered = investidores?.filter(i => 
     i.cpf_cnpj.includes(busca) ||
     i.nome.toLowerCase().includes(busca.toLowerCase())
-  );
+  ) || [];
 
   const handleCriar = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -74,6 +77,23 @@ export default function InvestidoresPage() {
         <Navigation />
         <div className="flex justify-center py-20">
           <Clock className="h-8 w-8 animate-spin" />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen">
+        <Navigation />
+        <div className="container mx-auto py-6 px-4">
+          <Card className="border-red-200">
+            <CardContent className="py-8 text-center">
+              <Users className="h-12 w-12 mx-auto mb-4 text-red-500" />
+              <p className="text-red-600">Erro ao carregar dados</p>
+              <p className="text-sm text-muted-foreground mt-2">{error.message}</p>
+            </CardContent>
+          </Card>
         </div>
       </div>
     );
@@ -124,7 +144,14 @@ export default function InvestidoresPage() {
 
         {/* Lista */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filtered?.length === 0 ? (
+          {investidores === undefined ? (
+            <Card className="col-span-full">
+              <CardContent className="py-12 text-center text-muted-foreground">
+                <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>Carregando dados...</p>
+              </CardContent>
+            </Card>
+          ) : filtered.length === 0 ? (
             <Card className="col-span-full">
               <CardContent className="py-12 text-center text-muted-foreground">
                 <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
@@ -132,7 +159,7 @@ export default function InvestidoresPage() {
               </CardContent>
             </Card>
           ) : (
-            filtered?.map((inv) => {
+            filtered.map((inv) => {
               const status = statusConfig[inv.status_onboarding];
               
               return (

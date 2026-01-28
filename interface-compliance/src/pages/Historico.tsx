@@ -13,14 +13,17 @@ import { ptBR } from 'date-fns/locale';
 export default function HistoricoPage() {
   const [busca, setBusca] = useState('');
   const [filtroStatus, setFiltroStatus] = useState<string>('');
-  const { data: cnpjs, isLoading } = useCNPJsVerificados();
+  const { data: cnpjs, isLoading, error } = useCNPJsVerificados();
+
+  console.log('CNPJs:', cnpjs);
+  console.log('Error:', error);
 
   const filtered = cnpjs?.filter(c => {
     const matchBusca = c.cnpj.includes(busca) || 
                        c.razao_social?.toLowerCase().includes(busca.toLowerCase());
     const matchStatus = !filtroStatus || c.status_compliance === filtroStatus;
     return matchBusca && matchStatus;
-  });
+  }) || [];
 
   if (isLoading) {
     return (
@@ -28,6 +31,23 @@ export default function HistoricoPage() {
         <Navigation />
         <div className="flex justify-center py-20">
           <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen">
+        <Navigation />
+        <div className="container mx-auto py-6 px-4">
+          <Card className="border-red-200">
+            <CardContent className="py-8 text-center">
+              <ShieldCheck className="h-12 w-12 mx-auto mb-4 text-red-500" />
+              <p className="text-red-600">Erro ao carregar dados</p>
+              <p className="text-sm text-muted-foreground mt-2">{error.message}</p>
+            </CardContent>
+          </Card>
         </div>
       </div>
     );
@@ -108,14 +128,19 @@ export default function HistoricoPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {filtered?.length === 0 ? (
+            {cnpjs === undefined ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <History className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>Carregando dados...</p>
+              </div>
+            ) : filtered.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground">
                 <History className="h-12 w-12 mx-auto mb-4 opacity-50" />
                 <p>Nenhum CNPJ encontrado no histórico</p>
               </div>
             ) : (
               <div className="divide-y">
-                {filtered?.map((cnpj) => (
+                {filtered.map((cnpj) => (
                   <div key={cnpj.id} className="py-4 flex items-start justify-between">
                     <div>
                       <div className="flex items-center gap-2 mb-1">
