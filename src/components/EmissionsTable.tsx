@@ -1,4 +1,4 @@
-import { Eye, Edit, FileDown, MoreHorizontal, Send, Check, X, Play, RotateCcw } from 'lucide-react';
+import { Eye, Edit, FileDown, MoreHorizontal, Send, Check, X, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -32,7 +32,8 @@ const statusActions: Record<string, { label: string; nextStatus: string; icon: R
     { label: 'Marcar como Rejeitada', nextStatus: 'rejeitada', icon: <X className="h-4 w-4 mr-2" /> },
   ],
   aceita: [
-    { label: 'Iniciar Estruturação', nextStatus: 'em_estruturacao', icon: <Play className="h-4 w-4 mr-2" /> },
+    // Fluxo automático: emissão vai para estruturação automaticamente via trigger
+    // quando o compliance aprovar o CNPJ e o status for 'aceita'
   ],
   rejeitada: [
     { label: 'Reabrir como Rascunho', nextStatus: 'rascunho', icon: <RotateCcw className="h-4 w-4 mr-2" /> },
