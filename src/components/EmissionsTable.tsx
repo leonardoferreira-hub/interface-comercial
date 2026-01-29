@@ -1,11 +1,13 @@
-import { Eye, Edit, FileDown, MoreHorizontal, Send, Check, X, RotateCcw } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Eye, Edit, FileDown, MoreHorizontal, Send, Check, X, RotateCcw, Shield, ShieldCheck, ShieldAlert, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Badge } from '@/components/ui/badge';
 import { StatusBadge } from './StatusBadge';
 import { finalizarProposta, type Emissao } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
-import { useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface EmissionsTableProps {
   emissoes: Emissao[];
@@ -23,27 +25,105 @@ const categoryColors: Record<string, string> = {
   CR: 'bg-rose-100 text-rose-700',
 };
 
-const statusActions: Record<string, { label: string; nextStatus: string; icon: React.ReactNode }[]> = {
-  rascunho: [
-    { label: 'Marcar como Enviada', nextStatus: 'enviada', icon: <Send className="h-4 w-4 mr-2" /> },
-  ],
-  enviada: [
-    { label: 'Marcar como Aceita', nextStatus: 'aceita', icon: <Check className="h-4 w-4 mr-2" /> },
-    { label: 'Marcar como Rejeitada', nextStatus: 'rejeitada', icon: <X className="h-4 w-4 mr-2" /> },
-  ],
-  aceita: [
-    // Fluxo automático: emissão vai para estruturação automaticamente via trigger
-    // quando o compliance aprovar o CNPJ e o status for 'aceita'
-  ],
-  rejeitada: [
-    { label: 'Reabrir como Rascunho', nextStatus: 'rascunho', icon: <RotateCcw className="h-4 w-4 mr-2" /> },
-  ],
-  em_estruturacao: [],
-};
+// Componente para mostrar status do compliance
+function ComplianceBadge({ emissaoId }: { emissaoId: string }) {
+  const [status, setStatus] = useState<string>('loading');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchStatus = async () => {
+      try {
+        const { data, error } = await supabase.rpc('get_status_compliance_emissao', {
+          p_emissao_id: emissaoId
+        });
+        
+        if (error) throw error;
+        setStatus(data?.status || 'pendente');
+      } catch (err) {
+        setStatus('error');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStatus();
+    // Atualiza a cada 10 segundos
+    const interval = setInterval(fetchStatus, 10000);
+    return () => clearInterval(interval);
+  }, [emissaoId]);
+
+  if (loading) {
+    return <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />;
+  }
+
+  const statusConfig: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
+    aprovado: {
+      label: 'Aprovado',
+      color: 'bg-green-100 text-green-700 border-green-200',
+      icon: <ShieldCheck className="h-3 w-3 mr-1" />
+    },
+    reprovado: {
+      label: 'Reprovado',
+      color: 'bg-red-100 text-red-700 border-red-200',
+      icon: <ShieldAlert className="h-3 w-3 mr-1" />
+    },
+    em_analise: {
+      label: 'Em Análise',
+      color: 'bg-blue-100 text-blue-700 border-blue-200',
+      icon: <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+    },
+    pendente: {
+      label: 'Aguardando',
+      color: 'bg-amber-100 text-amber-700 border-amber-200',
+      icon: <Shield className="h-3 w-3 mr-1" />
+    },
+    error: {
+      label: 'Erro',
+      color: 'bg-gray-100 text-gray-700 border-gray-200',
+      icon: <Shield className="h-3 w-3 mr-1" />
+    }
+  };
+
+  const config = statusConfig[status] || statusConfig.pendente;
+
+  return (
+    <Badge variant="outline" className={`text-xs ${config.color}`}>
+      {config.icon}
+      {config.label}
+    </Badge>
+  );
+}
 
 export function EmissionsTable({ emissoes, onView, onEdit, onExport, onStatusChange }: EmissionsTableProps) {
   const { toast } = useToast();
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [complianceStatus, setComplianceStatus] = useState<Record<string, any>>({});
+
+  // Buscar status do compliance para todas as emissões
+  useEffect(() => {
+    const fetchAllComplianceStatus = async () => {
+      const statuses: Record<string, any> = {};
+      
+      for (const emissao of emissoes) {
+        try {
+          const { data, error } = await supabase.rpc('get_status_compliance_emissao', {
+            p_emissao_id: emissao.id
+          });
+          if (!error && data) {
+            statuses[emissao.id] = data;
+          }
+        } catch (err) {
+          console.error('Erro ao buscar status do compliance:', err);
+        }
+      }
+      
+      setComplianceStatus(statuses);
+    };
+
+    if (emissoes.length > 0) {
+      fetchAllComplianceStatus();
+    }
+  }, [emissoes]);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -78,6 +158,37 @@ export function EmissionsTable({ emissoes, onView, onEdit, onExport, onStatusCha
     }
   };
 
+  // Verificar se pode aceitar proposta (compliance aprovado)
+  const podeAceitar = (emissaoId: string) => {
+    const status = complianceStatus[emissaoId];
+    return status?.aprovado === true;
+  };
+
+  // Gerar ações disponíveis
+  const getStatusActions = (emissao: Emissao) => {
+    const baseActions: Record<string, { label: string; nextStatus: string; icon: React.ReactNode; disabled?: boolean }[]> = {
+      rascunho: [
+        { label: 'Marcar como Enviada', nextStatus: 'enviada', icon: <Send className="h-4 w-4 mr-2" /> },
+      ],
+      enviada: [
+        { 
+          label: 'Marcar como Aceita', 
+          nextStatus: 'aceita', 
+          icon: <Check className="h-4 w-4 mr-2" />,
+          disabled: !podeAceitar(emissao.id)
+        },
+        { label: 'Marcar como Rejeitada', nextStatus: 'rejeitada', icon: <X className="h-4 w-4 mr-2" /> },
+      ],
+      aceita: [],
+      rejeitada: [
+        { label: 'Reabrir como Rascunho', nextStatus: 'rascunho', icon: <RotateCcw className="h-4 w-4 mr-2" /> },
+      ],
+      em_estruturacao: [],
+    };
+
+    return baseActions[emissao.status_proposta] || [];
+  };
+
   return (
     <div className="bg-card rounded-xl card-shadow overflow-hidden border-0">
       <Table>
@@ -88,14 +199,16 @@ export function EmissionsTable({ emissoes, onView, onEdit, onExport, onStatusCha
             <TableHead className="font-semibold">Categoria</TableHead>
             <TableHead className="font-semibold text-right">Volume</TableHead>
             <TableHead className="font-semibold">Status</TableHead>
+            <TableHead className="font-semibold">Compliance</TableHead>
             <TableHead className="font-semibold">Data</TableHead>
             <TableHead className="font-semibold text-right">Ações</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {emissoes.map((emissao, index) => {
-            const actions = statusActions[emissao.status_proposta] || [];
+            const actions = getStatusActions(emissao);
             const isUpdating = updatingId === emissao.id;
+            const complianceAprovado = podeAceitar(emissao.id);
 
             return (
               <TableRow
@@ -114,6 +227,9 @@ export function EmissionsTable({ emissoes, onView, onEdit, onExport, onStatusCha
                 <TableCell className="text-right font-medium">{formatCurrency(emissao.volume)}</TableCell>
                 <TableCell>
                   <StatusBadge status={emissao.status_proposta} />
+                </TableCell>
+                <TableCell onClick={(e) => e.stopPropagation()}>
+                  <ComplianceBadge emissaoId={emissao.id} />
                 </TableCell>
                 <TableCell className="text-muted-foreground">{formatDate(emissao.data_criacao)}</TableCell>
                 <TableCell className="text-right">
@@ -141,10 +257,15 @@ export function EmissionsTable({ emissoes, onView, onEdit, onExport, onStatusCha
                             {actions.map((action) => (
                               <DropdownMenuItem
                                 key={action.nextStatus}
-                                onClick={() => handleStatusChange(emissao.id, action.nextStatus)}
+                                onClick={() => !action.disabled && handleStatusChange(emissao.id, action.nextStatus)}
+                                disabled={action.disabled}
+                                className={action.disabled ? 'opacity-50 cursor-not-allowed' : ''}
                               >
                                 {action.icon}
                                 {action.label}
+                                {action.disabled && action.nextStatus === 'aceita' && (
+                                  <span className="ml-2 text-xs text-amber-600">(Aguardando compliance)</span>
+                                )}
                               </DropdownMenuItem>
                             ))}
                           </>
