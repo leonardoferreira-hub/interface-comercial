@@ -1,4 +1,3 @@
-import * as XLSX from 'xlsx';
 import type { Emissao } from './supabase';
 
 export function exportToCSV(data: Emissao[], filename: string = 'relatorio') {
@@ -36,7 +35,10 @@ export function exportToCSV(data: Emissao[], filename: string = 'relatorio') {
   link.click();
 }
 
-export function exportToXLSX(data: Emissao[], filename: string = 'relatorio') {
+export async function exportToXLSX(data: Emissao[], filename: string = 'relatorio') {
+  // Dynamic import do xlsx - carregado apenas quando necessário
+  const XLSX = await import('xlsx');
+  
   const worksheetData = [
     ['Número Emissão', 'Demandante', 'Empresa Destinatária', 'Categoria', 'Volume', 'Séries', 'Status', 'Data Criação'],
     ...data.map((e) => [

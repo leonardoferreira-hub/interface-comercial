@@ -1,9 +1,46 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+// JWT validation helper
+async function verifyAuth(req: Request, supabaseUrl: string): Promise<{ user: any | null; error: string | null }> {
+  const authHeader = req.headers.get("authorization");
+  if (!authHeader) {
+    return { user: null, error: "Authorization header missing" };
+  }
+
+  const token = authHeader.replace("Bearer ", "");
+  if (!token) {
+    return { user: null, error: "Token missing" };
+  }
+
+  try {
+    const supabase = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+    const { data: { user }, error } = await supabase.auth.getUser(token);
+    if (error || !user) {
+      return { user: null, error: "Invalid token" };
+    }
+    return { user, error: null };
+  } catch (e) {
+    return { user: null, error: "Token verification failed" };
+  }
+}
+
+const ALLOWED_ORIGINS = [
+  "http://100.91.53.76:5173",
+  "http://100.91.53.76:5174",
+  "http://100.91.53.76:5176",
+];
+
+const getCorsHeaders = (req: Request) => {
+  const origin = req.headers.get("origin") || "";
+  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+  return {
+    "Access-Control-Allow-Origin": allowedOrigin,
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+  };
 };
 
 // Mapeamento de papel para colunas da tabela custos
@@ -66,6 +103,8 @@ const papelToColumn: Record<string, { upfront?: string; recorrente?: string; rec
 const custosPerSerie = ["Registro B3", "Custódia B3"];
 
 serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req);
+
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -74,6 +113,16 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    
+    // Verify authentication
+    const { user, error: authError } = await verifyAuth(req, supabaseUrl);
+    if (authError) {
+      return new Response(
+        JSON.stringify({ success: false, error: "Unauthorized: " + authError }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     const body = await req.json();

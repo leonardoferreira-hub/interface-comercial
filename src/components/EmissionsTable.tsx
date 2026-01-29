@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { Eye, Edit, FileDown, MoreHorizontal, Send, Check, X, RotateCcw, Shield, ShieldCheck, ShieldAlert, Loader2 } from 'lucide-react';
+import { useEffect, useState, memo, useMemo } from 'react';
+import { Eye, Edit, FileDown, MoreHorizontal, Send, Check, X, RotateCcw, Shield, ShieldCheck, ShieldAlert, Loader2, Inbox } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -8,6 +8,10 @@ import { StatusBadge } from './StatusBadge';
 import { finalizarProposta, type Emissao } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { AnimatedListItem } from '@/components/ui/animations';
+import { TableSkeleton } from '@/components/ui/skeletons';
+import { EmptyState } from '@/components/ui/empty-state';
+import { motion } from 'framer-motion';
 
 interface EmissionsTableProps {
   emissoes: Emissao[];
@@ -15,18 +19,20 @@ interface EmissionsTableProps {
   onEdit: (id: string) => void;
   onExport: (id: string) => void;
   onStatusChange?: () => void;
+  isLoading?: boolean;
 }
 
+// Cores acessíveis com contraste WCAG AA
 const categoryColors: Record<string, string> = {
-  DEB: 'bg-blue-100 text-blue-700',
-  CRA: 'bg-green-100 text-green-700',
-  CRI: 'bg-purple-100 text-purple-700',
-  NC: 'bg-amber-100 text-amber-700',
-  CR: 'bg-rose-100 text-rose-700',
+  DEB: 'bg-blue-100 text-blue-800 border-blue-300',
+  CRA: 'bg-green-100 text-green-800 border-green-300',
+  CRI: 'bg-purple-100 text-purple-800 border-purple-300',
+  NC: 'bg-amber-100 text-amber-800 border-amber-300',
+  CR: 'bg-rose-100 text-rose-800 border-rose-300',
 };
 
-// Componente para mostrar status do compliance
-function ComplianceBadge({ emissaoId }: { emissaoId: string }) {
+// Componente para mostrar status do compliance com acessibilidade - memoizado
+const ComplianceBadge = memo(function ComplianceBadge({ emissaoId }: { emissaoId: string }) {
   const [status, setStatus] = useState<string>('loading');
   const [loading, setLoading] = useState(true);
 
@@ -56,30 +62,31 @@ function ComplianceBadge({ emissaoId }: { emissaoId: string }) {
     return <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />;
   }
 
-  const statusConfig: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
+  // Status config com contraste acessível
+  const statusConfig: Record<string, { label: string; className: string; icon: React.ReactNode }> = {
     aprovado: {
       label: 'Aprovado',
-      color: 'bg-green-100 text-green-700 border-green-200',
+      className: 'bg-green-100 text-green-800 border-green-300 font-medium',
       icon: <ShieldCheck className="h-3 w-3 mr-1" />
     },
     reprovado: {
       label: 'Reprovado',
-      color: 'bg-red-100 text-red-700 border-red-200',
+      className: 'bg-red-100 text-red-800 border-red-300 font-medium',
       icon: <ShieldAlert className="h-3 w-3 mr-1" />
     },
     em_analise: {
       label: 'Em Análise',
-      color: 'bg-blue-100 text-blue-700 border-blue-200',
+      className: 'bg-blue-100 text-blue-800 border-blue-300 font-medium',
       icon: <Loader2 className="h-3 w-3 mr-1 animate-spin" />
     },
     pendente: {
       label: 'Aguardando',
-      color: 'bg-amber-100 text-amber-700 border-amber-200',
+      className: 'bg-amber-100 text-amber-800 border-amber-300 font-medium',
       icon: <Shield className="h-3 w-3 mr-1" />
     },
     error: {
       label: 'Erro',
-      color: 'bg-gray-100 text-gray-700 border-gray-200',
+      className: 'bg-gray-100 text-gray-800 border-gray-300 font-medium',
       icon: <Shield className="h-3 w-3 mr-1" />
     }
   };
@@ -87,14 +94,14 @@ function ComplianceBadge({ emissaoId }: { emissaoId: string }) {
   const config = statusConfig[status] || statusConfig.pendente;
 
   return (
-    <Badge variant="outline" className={`text-xs ${config.color}`}>
+    <Badge variant="outline" className={`text-xs ${config.className}`}>
       {config.icon}
       {config.label}
     </Badge>
   );
-}
+});
 
-export function EmissionsTable({ emissoes, onView, onEdit, onExport, onStatusChange }: EmissionsTableProps) {
+export const EmissionsTable = memo(function EmissionsTable({ emissoes, onView, onEdit, onExport, onStatusChange, isLoading }: EmissionsTableProps) {
   const { toast } = useToast();
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [complianceStatus, setComplianceStatus] = useState<Record<string, any>>({});
@@ -166,7 +173,7 @@ export function EmissionsTable({ emissoes, onView, onEdit, onExport, onStatusCha
 
   // Gerar ações disponíveis
   const getStatusActions = (emissao: Emissao) => {
-    const baseActions: Record<string, { label: string; nextStatus: string; icon: React.ReactNode; disabled?: boolean }[]> = {
+    const baseActions: Record<string, { label: string; nextStatus: string; icon: React.ReactNode; disabled?: boolean; disabledReason?: string }[]> = {
       rascunho: [
         { label: 'Marcar como Enviada', nextStatus: 'enviada', icon: <Send className="h-4 w-4 mr-2" /> },
       ],
@@ -175,7 +182,8 @@ export function EmissionsTable({ emissoes, onView, onEdit, onExport, onStatusCha
           label: 'Marcar como Aceita', 
           nextStatus: 'aceita', 
           icon: <Check className="h-4 w-4 mr-2" />,
-          disabled: !podeAceitar(emissao.id)
+          disabled: !podeAceitar(emissao.id),
+          disabledReason: 'Aguardando compliance'
         },
         { label: 'Marcar como Rejeitada', nextStatus: 'rejeitada', icon: <X className="h-4 w-4 mr-2" /> },
       ],
@@ -189,96 +197,208 @@ export function EmissionsTable({ emissoes, onView, onEdit, onExport, onStatusCha
     return baseActions[emissao.status_proposta] || [];
   };
 
+  if (isLoading) {
+    return (
+      <div className="bg-card rounded-xl card-shadow overflow-hidden border-0">
+        <TableSkeleton rows={5} columns={8} />
+      </div>
+    );
+  }
+
+  if (emissoes.length === 0) {
+    return (
+      <div className="bg-card rounded-xl card-shadow overflow-hidden border-0">
+        <EmptyState
+          icon={Inbox}
+          title="Nenhuma emissão encontrada"
+          description="Não há emissões cadastradas no sistema."
+          variant="compact"
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="bg-card rounded-xl card-shadow overflow-hidden border-0">
-      <Table>
-        <TableHeader>
-          <TableRow className="bg-muted/50 hover:bg-muted/50">
-            <TableHead className="font-semibold">Número</TableHead>
-            <TableHead className="font-semibold">Demandante</TableHead>
-            <TableHead className="font-semibold">Categoria</TableHead>
-            <TableHead className="font-semibold text-right">Volume</TableHead>
-            <TableHead className="font-semibold">Status</TableHead>
-            <TableHead className="font-semibold">Compliance</TableHead>
-            <TableHead className="font-semibold">Data</TableHead>
-            <TableHead className="font-semibold text-right">Ações</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {emissoes.map((emissao, index) => {
-            const actions = getStatusActions(emissao);
-            const isUpdating = updatingId === emissao.id;
-            const complianceAprovado = podeAceitar(emissao.id);
+      {/* Mobile Cards View */}
+      <div className="sm:hidden divide-y">
+        {emissoes.map((emissao, index) => {
+          const actions = getStatusActions(emissao);
+          const isUpdating = updatingId === emissao.id;
+          const complianceAprovado = podeAceitar(emissao.id);
 
-            return (
-              <TableRow
-                key={emissao.id}
-                className="animate-fade-in cursor-pointer hover:bg-muted/30 transition-colors"
-                style={{ animationDelay: `${index * 30}ms` }}
+          return (
+            <AnimatedListItem key={emissao.id} index={index}>
+              <div 
+                className="p-4 space-y-3 cursor-pointer hover:bg-muted/30 transition-colors"
                 onClick={() => onView(emissao.id)}
               >
-                <TableCell className="font-medium text-primary">{emissao.numero_emissao}</TableCell>
-                <TableCell>{emissao.demandante_proposta}</TableCell>
-                <TableCell>
-                  <span className={`px-2 py-1 rounded-md text-xs font-semibold ${categoryColors[emissao.categoria] || 'bg-gray-100 text-gray-700'}`}>
+                {/* Header */}
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-primary truncate">{emissao.numero_emissao}</p>
+                    <p className="text-sm text-muted-foreground truncate">{emissao.demandante_proposta}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-medium text-sm">{formatCurrency(emissao.volume)}</p>
+                  </div>
+                </div>
+
+                {/* Badges */}
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className={`px-2 py-1 rounded-md text-xs font-medium border ${categoryColors[emissao.categoria] || 'bg-gray-100 text-gray-800 border-gray-300'}`}>
                     {emissao.categoria}
                   </span>
-                </TableCell>
-                <TableCell className="text-right font-medium">{formatCurrency(emissao.volume)}</TableCell>
-                <TableCell>
                   <StatusBadge status={emissao.status_proposta} />
-                </TableCell>
-                <TableCell onClick={(e) => e.stopPropagation()}>
-                  <ComplianceBadge emissaoId={emissao.id} />
-                </TableCell>
-                <TableCell className="text-muted-foreground">{formatDate(emissao.data_criacao)}</TableCell>
-                <TableCell className="text-right">
-                  <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
-                    <Button variant="ghost" size="icon" onClick={() => onView(emissao.id)} className="h-8 w-8" title="Visualizar">
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" onClick={() => onEdit(emissao.id)} className="h-8 w-8" title="Editar">
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8" disabled={isUpdating}>
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => onExport(emissao.id)}>
-                          <FileDown className="h-4 w-4 mr-2" />
-                          Exportar PDF
-                        </DropdownMenuItem>
-                        {actions.length > 0 && (
-                          <>
-                            <DropdownMenuSeparator />
-                            {actions.map((action) => (
-                              <DropdownMenuItem
-                                key={action.nextStatus}
-                                onClick={() => !action.disabled && handleStatusChange(emissao.id, action.nextStatus)}
-                                disabled={action.disabled}
-                                className={action.disabled ? 'opacity-50 cursor-not-allowed' : ''}
-                              >
-                                {action.icon}
-                                {action.label}
-                                {action.disabled && action.nextStatus === 'aceita' && (
-                                  <span className="ml-2 text-xs text-amber-600">(Aguardando compliance)</span>
-                                )}
-                              </DropdownMenuItem>
-                            ))}
-                          </>
-                        )}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                </div>
+
+                {/* Compliance */}
+                <div className="flex items-center justify-between">
+                  <div onClick={(e) => e.stopPropagation()}>
+                    <ComplianceBadge emissaoId={emissao.id} />
                   </div>
-                </TableCell>
-              </TableRow>
-            );
-          })}
-        </TableBody>
-      </Table>
+                  <span className="text-xs text-muted-foreground">
+                    {formatDate(emissao.data_criacao)}
+                  </span>
+                </div>
+
+                {/* Actions */}
+                <div className="flex items-center justify-end gap-1 pt-2 border-t" onClick={(e) => e.stopPropagation()}>
+                  <Button variant="ghost" size="icon" onClick={() => onView(emissao.id)} className="h-8 w-8" title="Visualizar">
+                    <Eye className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" onClick={() => onEdit(emissao.id)} className="h-8 w-8" title="Editar">
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8" disabled={isUpdating}>
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-48">
+                      <DropdownMenuItem onClick={() => onExport(emissao.id)}>
+                        <FileDown className="h-4 w-4 mr-2" />
+                        Exportar PDF
+                      </DropdownMenuItem>
+                      {actions.length > 0 && (
+                        <>
+                          <DropdownMenuSeparator />
+                          {actions.map((action) => (
+                            <DropdownMenuItem
+                              key={action.nextStatus}
+                              onClick={() => !action.disabled && handleStatusChange(emissao.id, action.nextStatus)}
+                              disabled={action.disabled}
+                              className={action.disabled ? 'opacity-50 cursor-not-allowed' : ''}
+                            >
+                              {action.icon}
+                              {action.label}
+                              {action.disabled && action.disabledReason && (
+                                <span className="ml-auto text-xs text-amber-600">({action.disabledReason})</span>
+                              )}
+                            </DropdownMenuItem>
+                          ))}
+                        </>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </div>
+            </AnimatedListItem>
+          );
+        })}
+      </div>
+
+      {/* Desktop Table View */}
+      <div className="hidden sm:block overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-muted/50 hover:bg-muted/50">
+              <TableHead className="font-semibold whitespace-nowrap">Número</TableHead>
+              <TableHead className="font-semibold whitespace-nowrap">Demandante</TableHead>
+              <TableHead className="font-semibold whitespace-nowrap">Categoria</TableHead>
+              <TableHead className="font-semibold text-right whitespace-nowrap">Volume</TableHead>
+              <TableHead className="font-semibold whitespace-nowrap">Status</TableHead>
+              <TableHead className="font-semibold whitespace-nowrap">Compliance</TableHead>
+              <TableHead className="font-semibold whitespace-nowrap">Data</TableHead>
+              <TableHead className="font-semibold text-right whitespace-nowrap">Ações</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {emissoes.map((emissao, index) => {
+              const actions = getStatusActions(emissao);
+              const isUpdating = updatingId === emissao.id;
+              const complianceAprovado = podeAceitar(emissao.id);
+
+              return (
+                  <TableRow
+                    key={emissao.id}
+                    className="cursor-pointer hover:bg-muted/30 transition-colors group"
+                    onClick={() => onView(emissao.id)}
+                  >
+                    <TableCell className="font-medium text-primary whitespace-nowrap">{emissao.numero_emissao}</TableCell>
+                    <TableCell className="whitespace-nowrap">{emissao.demandante_proposta}</TableCell>
+                    <TableCell>
+                      <span className={`px-2 py-1 rounded-md text-xs font-medium border ${categoryColors[emissao.categoria] || 'bg-gray-100 text-gray-800 border-gray-300'}`}>
+                        {emissao.categoria}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-right font-medium whitespace-nowrap">{formatCurrency(emissao.volume)}</TableCell>
+                    <TableCell>
+                      <StatusBadge status={emissao.status_proposta} />
+                    </TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <ComplianceBadge emissaoId={emissao.id} />
+                    </TableCell>
+                    <TableCell className="text-muted-foreground whitespace-nowrap">{formatDate(emissao.data_criacao)}</TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+                        <Button variant="ghost" size="icon" onClick={() => onView(emissao.id)} className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity" title="Visualizar">
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => onEdit(emissao.id)} className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity" title="Editar">
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" disabled={isUpdating}>
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-48">
+                            <DropdownMenuItem onClick={() => onExport(emissao.id)}>
+                              <FileDown className="h-4 w-4 mr-2" />
+                              Exportar PDF
+                            </DropdownMenuItem>
+                            {actions.length > 0 && (
+                              <>
+                                <DropdownMenuSeparator />
+                                {actions.map((action) => (
+                                  <DropdownMenuItem
+                                    key={action.nextStatus}
+                                    onClick={() => !action.disabled && handleStatusChange(emissao.id, action.nextStatus)}
+                                    disabled={action.disabled}
+                                    className={action.disabled ? 'opacity-50 cursor-not-allowed' : ''}
+                                  >
+                                    {action.icon}
+                                    {action.label}
+                                    {action.disabled && action.disabledReason && (
+                                      <span className="ml-auto text-xs text-amber-600">({action.disabledReason})</span>
+                                    )}
+                                  </DropdownMenuItem>
+                                ))}
+                              </>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
-}
+});

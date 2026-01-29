@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Search, Filter, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -54,7 +54,7 @@ export default function Index() {
     }
   };
 
-  const filteredEmissoes = emissoes.filter((e) => {
+  const filteredEmissoes = useMemo(() => emissoes.filter((e) => {
     const matchesSearch =
       e.numero_emissao.toLowerCase().includes(searchTerm.toLowerCase()) ||
       e.demandante_proposta.toLowerCase().includes(searchTerm.toLowerCase());
@@ -66,36 +66,41 @@ export default function Index() {
     const matchesDateTo = !dateTo || emissaoDate <= dateTo;
 
     return matchesSearch && matchesStatus && matchesCategory && matchesDateFrom && matchesDateTo;
-  });
+  }), [emissoes, searchTerm, statusFilter, categoryFilter, dateFrom, dateTo]);
 
-  // KPI calculations
-  const total = emissoes.length;
-  const aceitas = emissoes.filter((e) => e.status_proposta === 'aceita').length;
-  const estruturando = emissoes.filter(
-    (e) => e.status_proposta === 'em_estruturacao'
-  ).length;
-  const volumeTotal = emissoes.reduce((sum, e) => sum + e.volume, 0);
+  // KPI calculations - memoizados
+  const kpiData = useMemo(() => {
+    const total = emissoes.length;
+    const aceitas = emissoes.filter((e) => e.status_proposta === 'aceita').length;
+    const estruturando = emissoes.filter(
+      (e) => e.status_proposta === 'em_estruturacao'
+    ).length;
+    const volumeTotal = emissoes.reduce((sum, e) => sum + e.volume, 0);
+    return { total, aceitas, estruturando, volumeTotal };
+  }, [emissoes]);
 
-  // Chart data
-  const categoryData = ['DEB', 'CRA', 'CRI', 'NC', 'CR'].map((cat) => ({
+  // Chart data - memoizado
+  const categoryData = useMemo(() => ['DEB', 'CRA', 'CRI', 'NC', 'CR'].map((cat) => ({
     name: cat,
     value: emissoes.filter((e) => e.categoria === cat).length,
     color: '',
-  })).filter((d) => d.value > 0);
+  })).filter((d) => d.value > 0), [emissoes]);
 
-  const statusLabels: Record<string, string> = {
-    aceita: 'Aceita',
-    em_estruturacao: 'Em Estruturação',
-    enviada: 'Enviada',
-    rascunho: 'Rascunho',
-    rejeitada: 'Rejeitada',
-  };
-
-  const statusVolumeData = ['aceita', 'em_estruturacao', 'enviada', 'rascunho'].map((status) => ({
-    name: statusLabels[status] || status,
-    value: emissoes.filter((e) => e.status_proposta === status).reduce((sum, e) => sum + e.volume, 0),
-    color: '',
-  })).filter((d) => d.value > 0);
+  // Status labels - definido fora do componente (constante)
+  const statusVolumeData = useMemo(() => {
+    const statusLabels: Record<string, string> = {
+      aceita: 'Aceita',
+      em_estruturacao: 'Em Estruturação',
+      enviada: 'Enviada',
+      rascunho: 'Rascunho',
+      rejeitada: 'Rejeitada',
+    };
+    return ['aceita', 'em_estruturacao', 'enviada', 'rascunho'].map((status) => ({
+      name: statusLabels[status] || status,
+      value: emissoes.filter((e) => e.status_proposta === status).reduce((sum, e) => sum + e.volume, 0),
+      color: '',
+    })).filter((d) => d.value > 0);
+  }, [emissoes]);
 
   const handleView = (id: string) => {
     navigate(`/proposta?id=${id}`);
@@ -126,10 +131,10 @@ export default function Index() {
         {/* KPIs */}
         <div className="mb-8">
           <KPICards
-            total={total}
-            aceitas={aceitas}
-            estruturando={estruturando}
-            volumeTotal={volumeTotal}
+            total={kpiData.total}
+            aceitas={kpiData.aceitas}
+            estruturando={kpiData.estruturando}
+            volumeTotal={kpiData.volumeTotal}
           />
         </div>
 

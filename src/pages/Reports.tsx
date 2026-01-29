@@ -98,7 +98,7 @@ export default function Reports() {
     });
   };
 
-  const handleExportXLSX = () => {
+  const handleExportXLSX = async () => {
     if (filteredEmissoes.length === 0) {
       toast({
         title: 'Nenhum dado para exportar',
@@ -107,7 +107,7 @@ export default function Reports() {
       });
       return;
     }
-    exportToXLSX(filteredEmissoes, 'emissoes');
+    await exportToXLSX(filteredEmissoes, 'emissoes');
     toast({
       title: 'Exportação concluída',
       description: `${filteredEmissoes.length} registros exportados para Excel.`,
