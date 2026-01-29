@@ -78,12 +78,12 @@ export default function HistoricoPage() {
               className="pl-10"
             />
           </div>
-          <Select value={filtroStatus} onValueChange={setFiltroStatus}>
+          <Select value={filtroStatus || 'todos'} onValueChange={(v) => setFiltroStatus(v === 'todos' ? '' : v)}>
             <SelectTrigger className="w-full sm:w-48">
               <SelectValue placeholder="Todos os status" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Todos</SelectItem>
+              <SelectItem value="todos">Todos</SelectItem>
               <SelectItem value="aprovado">Aprovado</SelectItem>
               <SelectItem value="reprovado">Reprovado</SelectItem>
               <SelectItem value="pendente">Pendente</SelectItem>

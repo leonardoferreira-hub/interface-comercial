@@ -121,12 +121,12 @@ export default function VerificacoesPage() {
               className="pl-10"
             />
           </div>
-          <Select value={filtroStatus} onValueChange={setFiltroStatus}>
+          <Select value={filtroStatus || 'todos'} onValueChange={(v) => setFiltroStatus(v === 'todos' ? '' : v)}>
             <SelectTrigger className="w-full sm:w-48">
               <SelectValue placeholder="Todos os status" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Todos</SelectItem>
+              <SelectItem value="todos">Todos</SelectItem>
               <SelectItem value="pendente">Pendente</SelectItem>
               <SelectItem value="em_analise">Em Análise</SelectItem>
               <SelectItem value="aprovado">Aprovado</SelectItem>

@@ -151,16 +151,11 @@ export function useAnalisarVerificacao() {
       observacoes?: string;
     }) => {
       const { data, error } = await supabase
-        .schema('compliance')
-        .from('verificacoes_pendentes')
-        .update({
-          status,
-          observacoes,
-          data_analise: new Date().toISOString(),
-        })
-        .eq('id', id)
-        .select()
-        .single();
+        .rpc('atualizar_verificacao', {
+          p_id: id,
+          p_status: status,
+          p_observacoes: observacoes || null,
+        });
       
       if (error) throw error;
       return data;
@@ -189,14 +184,14 @@ export function useCriarInvestidor() {
       tipo_investidor?: string;
     }) => {
       const { data, error } = await supabase
-        .schema('compliance')
-        .from('investidores')
-        .insert({
-          ...investidor,
-          status_onboarding: 'documentacao_pendente',
-        })
-        .select()
-        .single();
+        .rpc('criar_investidor', {
+          p_cpf_cnpj: investidor.cpf_cnpj,
+          p_nome: investidor.nome,
+          p_email: investidor.email || null,
+          p_telefone: investidor.telefone || null,
+          p_tipo: investidor.tipo || 'pessoa_fisica',
+          p_tipo_investidor: investidor.tipo_investidor || 'varejo',
+        });
       
       if (error) throw error;
       return data;
@@ -226,16 +221,11 @@ export function useAnalisarInvestidor() {
       observacoes?: string;
     }) => {
       const { data, error } = await supabase
-        .schema('compliance')
-        .from('investidores')
-        .update({
-          status_onboarding: status,
-          observacoes,
-          data_analise: new Date().toISOString(),
-        })
-        .eq('id', id)
-        .select()
-        .single();
+        .rpc('atualizar_investidor', {
+          p_id: id,
+          p_status: status,
+          p_observacoes: observacoes || null,
+        });
       
       if (error) throw error;
       return data;
@@ -248,5 +238,27 @@ export function useAnalisarInvestidor() {
     onError: (error: any) => {
       toast.error(error?.message || 'Erro ao analisar');
     },
+  });
+}
+
+// Buscar detalhes do investidor
+export function useInvestidorDetalhes(id: string | undefined) {
+  return useQuery({
+    queryKey: ['investidor-detalhes', id],
+    queryFn: async () => {
+      if (!id) return null;
+      
+      const { data, error } = await supabase
+        .rpc('get_investidor_detalhes', {
+          p_id: id,
+        });
+      
+      if (error) throw error;
+      return data as {
+        investidor: Investidor;
+        documentos: any[];
+      };
+    },
+    enabled: !!id,
   });
 }
