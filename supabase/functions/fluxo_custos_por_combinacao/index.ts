@@ -2,9 +2,11 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const ALLOWED_ORIGINS = [
+  "http://100.91.53.76:8082",
+  "http://100.91.53.76:8083",
+  "http://100.91.53.76:8084",
   "http://100.91.53.76:5173",
-  "http://100.91.53.76:5174",
-  "http://100.91.53.76:5176",
+  "http://localhost:5173",
 ];
 
 const getCorsHeaders = (req: Request) => {

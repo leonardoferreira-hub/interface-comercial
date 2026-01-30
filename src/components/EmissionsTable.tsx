@@ -221,7 +221,7 @@ export const EmissionsTable = memo(function EmissionsTable({ emissoes, onView, o
   return (
     <div className="bg-card rounded-xl card-shadow overflow-hidden border-0">
       {/* Mobile Cards View */}
-      <div className="sm:hidden divide-y">
+      <div className="sm:hidden p-3 space-y-3">
         {emissoes.map((emissao, index) => {
           const actions = getStatusActions(emissao);
           const isUpdating = updatingId === emissao.id;
@@ -230,50 +230,53 @@ export const EmissionsTable = memo(function EmissionsTable({ emissoes, onView, o
           return (
             <AnimatedListItem key={emissao.id} index={index}>
               <div 
-                className="p-4 space-y-3 cursor-pointer hover:bg-muted/30 transition-colors"
+                className="rounded-xl border border-border/50 bg-card p-4 shadow-sm cursor-pointer hover:shadow-md hover:border-border transition-all"
                 onClick={() => onView(emissao.id)}
               >
-                {/* Header */}
-                <div className="flex items-start justify-between gap-2">
+                {/* Header: Empresa + Valor */}
+                <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
-                    <p className="font-medium text-primary truncate">{emissao.numero_emissao}</p>
-                    <p className="text-sm text-muted-foreground truncate">{emissao.demandante_proposta}</p>
+                    <h3 className="font-semibold text-foreground truncate">
+                      {emissao.demandante_proposta || 'Sem demandante'}
+                    </h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {emissao.numero_emissao}
+                    </p>
                   </div>
-                  <div className="text-right">
-                    <p className="font-medium text-sm">{formatCurrency(emissao.volume)}</p>
+                  <div className="text-right shrink-0">
+                    <p className="font-semibold text-foreground tabular-nums">
+                      {formatCurrency(emissao.volume)}
+                    </p>
                   </div>
                 </div>
 
-                {/* Badges */}
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className={`px-2 py-1 rounded-md text-xs font-medium border ${categoryColors[emissao.categoria] || 'bg-gray-100 text-gray-800 border-gray-300'}`}>
+                {/* Tags: Categoria + Status */}
+                <div className="mt-3 flex flex-wrap items-center gap-1.5">
+                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium border ${categoryColors[emissao.categoria] || 'bg-gray-100 text-gray-800 border-gray-300'}`}>
                     {emissao.categoria}
                   </span>
                   <StatusBadge status={emissao.status_proposta} />
                 </div>
 
-                {/* Compliance */}
-                <div className="flex items-center justify-between">
-                  <div onClick={(e) => e.stopPropagation()}>
+                {/* Footer: Compliance + Data + Ações */}
+                <div className="mt-3 pt-3 border-t border-border/50 flex items-center justify-between">
+                  <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                     <ComplianceBadge emissaoId={emissao.id} />
+                    <span className="text-xs text-muted-foreground">
+                      {formatDate(emissao.data_criacao)}
+                    </span>
                   </div>
-                  <span className="text-xs text-muted-foreground">
-                    {formatDate(emissao.data_criacao)}
-                  </span>
-                </div>
-
-                {/* Actions */}
-                <div className="flex items-center justify-end gap-1 pt-2 border-t" onClick={(e) => e.stopPropagation()}>
-                  <Button variant="ghost" size="icon" onClick={() => onView(emissao.id)} className="h-8 w-8" title="Visualizar">
-                    <Eye className="h-4 w-4" />
+                  <div className="flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
+                  <Button variant="ghost" size="icon" onClick={() => onView(emissao.id)} className="h-7 w-7 text-muted-foreground hover:text-foreground" title="Visualizar">
+                    <Eye className="h-3.5 w-3.5" />
                   </Button>
-                  <Button variant="ghost" size="icon" onClick={() => onEdit(emissao.id)} className="h-8 w-8" title="Editar">
-                    <Edit className="h-4 w-4" />
+                  <Button variant="ghost" size="icon" onClick={() => onEdit(emissao.id)} className="h-7 w-7 text-muted-foreground hover:text-foreground" title="Editar">
+                    <Edit className="h-3.5 w-3.5" />
                   </Button>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8" disabled={isUpdating}>
-                        <MoreHorizontal className="h-4 w-4" />
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" disabled={isUpdating}>
+                        <MoreHorizontal className="h-3.5 w-3.5" />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-48">

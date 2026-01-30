@@ -22,9 +22,6 @@ verify_jwt = false
 [functions.fluxo-1-salvar-custos]
 verify_jwt = false
 
-[functions.fluxo-2-gerar-pdf]
-verify_jwt = false
-
 [functions.fluxo-2-finalizar-proposta]
 verify_jwt = false
 

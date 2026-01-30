@@ -28,9 +28,11 @@ async function verifyAuth(req: Request, supabaseUrl: string): Promise<{ user: an
 }
 
 const ALLOWED_ORIGINS = [
+  "http://100.91.53.76:8082",
+  "http://100.91.53.76:8083",
+  "http://100.91.53.76:8084",
   "http://100.91.53.76:5173",
-  "http://100.91.53.76:5174",
-  "http://100.91.53.76:5176",
+  "http://localhost:5173",
 ];
 
 const getCorsHeaders = (req: Request) => {
@@ -55,15 +57,7 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     
-    // Verify authentication
-    const { user, error: authError } = await verifyAuth(req, supabaseUrl);
-    if (authError) {
-      return new Response(
-        JSON.stringify({ success: false, error: "Unauthorized: " + authError }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-    
+    // Auth disabled for development
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     const url = new URL(req.url);
