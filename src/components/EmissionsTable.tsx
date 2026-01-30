@@ -305,6 +305,7 @@ export const EmissionsTable = memo(function EmissionsTable({ emissoes, onView, o
                       )}
                     </DropdownMenuContent>
                   </DropdownMenu>
+                  </div>
                 </div>
               </div>
             </AnimatedListItem>
