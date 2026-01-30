@@ -6,6 +6,9 @@ const ALLOWED_ORIGINS = [
   "http://100.91.53.76:8084",
   "http://100.91.53.76:5173",
   "http://localhost:5173",
+  "https://calculadoratrv.lovable.app",
+  "https://interfaceestruturacao.lovable.app",
+  "https://interfacecompliance.lovable.app",
 ];
 
 const getCorsHeaders = (req: Request) => {
